@@ -30,6 +30,15 @@ public class ConfigReader {
     }
 
     public static String getProperty(String key) {
-        return properties.getProperty(key);
+        String value = properties.getProperty(key);
+
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Missing or empty configuration property: " + key
+            );
+        }
+
+        return value.trim();
     }
+
 }

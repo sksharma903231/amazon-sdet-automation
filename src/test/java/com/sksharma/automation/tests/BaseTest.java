@@ -2,9 +2,10 @@
 package com.sksharma.automation.tests;
 import com.sksharma.automation.config.ConfigReader;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.chrome.ChromeDriver;
+
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
+import com.sksharma.automation.driver.DriverFactory;
 
 public class BaseTest {
 
@@ -12,7 +13,7 @@ public class BaseTest {
 
     @BeforeMethod
     public void setUp() {
-        driver = new ChromeDriver();
+        driver = DriverFactory.createDriver();
         driver.get(ConfigReader.getProperty("base.url"));
     }
 
