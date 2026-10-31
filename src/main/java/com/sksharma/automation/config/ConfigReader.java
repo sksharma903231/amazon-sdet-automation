@@ -30,11 +30,29 @@ public class ConfigReader {
     }
 
     public static String getProperty(String key) {
-        String value = properties.getProperty(key);
+        if (key == null || key.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Configuration key must not be null or blank."
+            );
+        }
 
+        String normalizedKey = key.trim();
+        String value = System.getProperty(normalizedKey);
+        if (value != null) {
+            if (value.isBlank()) {
+                throw new IllegalArgumentException(
+                        "System property override for configuration key '"
+                                + normalizedKey + "' must not be blank."
+                );
+            }
+            return value.trim();
+        }
+
+        value = properties.getProperty(normalizedKey);
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException(
-                    "Missing or empty configuration property: " + key
+                    "Missing or empty configuration property in config.properties: "
+                            + normalizedKey
             );
         }
 
