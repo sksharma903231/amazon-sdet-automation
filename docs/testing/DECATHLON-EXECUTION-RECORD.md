@@ -91,3 +91,47 @@ additional filters, sorting, no-results behavior, variants/delivery state,
 guest cart addition, and cart quantity/subtotal/removal. Checkout is not in the
 verified inventory because it was not safely reachable or exercised. No
 account, personal data, order, or payment was used.
+
+## 2026-11-01 expanded functional milestone
+
+Live DOM inspection found current Gender facets, Price sorting options, a
+read-only price range display, and product-card Add to cart buttons. New
+coverage adds partial and mixed-case query variations from a separate
+properties fixture, the explicit no-results message (Decathlon also shows
+recommendation cards), Men filtering with Clear all, and low-to-high numeric
+price sorting. The sort control's high-to-low option did not consistently
+produce descending sale-price order, so it remains unverified. Clicking a
+listing Add to cart control did not show cart confirmation or alter a cart
+state; cart and checkout remain unverified.
+
+The first grouped Maven run exposed that inherited setup did not execute under
+Surefire group filtering. Marking `BaseTest.setUp` `alwaysRun=true` corrected
+this; grouped runs now launch a separate driver for each invocation. The
+no-results page includes recommendations, so its assertion checks the exact
+no-results message and absence of the unique unmatched term from product
+evidence instead of requiring the whole page to have zero product links.
+
+| Validation | Methods / invocations | Results |
+| --- | ---: | --- |
+| Search, filters, and sorting groups (headless) | 6 / 8 | 8 passed, 0 failed, 0 skipped |
+| Search group after Extent labeling update (headless) | 3 / 5 | 5 passed, 0 failed, 0 skipped |
+| Men → Running Shoes category (headless) | 1 / 1 | 1 passed |
+| Full clean suite (headless) | 9 / 11 | 11 passed, 0 failed, 0 skipped; 34.1 s total |
+| Full suite (headed, final code) | 9 / 11 | 11 passed, 0 failed, 0 skipped; 43.8 s total |
+
+Both full runs observed nine unique business scenarios and three data rows
+for `DEC-DISC-02`. Final headed analytics reports 9 methods, 11 invocations,
+9 passed scenarios, zero configuration failures, eight unverified candidates,
+and one blocked candidate. Per-module outcomes were recorded for search,
+filters, sorting, product, and navigation. The failed intermediate high-to-low
+assertion exercised screenshot capture; Extent reports contain the failure
+entry and screenshot attachment. Final passing runs correctly have no failure
+screenshots. Search group reports also confirmed scenario descriptions and
+query parameters appear in Extent test names.
+
+Current limitations are tracked in `in-scope-scenarios.txt`: price input is
+blocked because both displayed min/max fields are read-only and no adjustable
+range was exposed; empty/special-character search, other category facets,
+high-to-low sort, product variant/delivery state, guest cart mutation, cart
+calculations/removal, and safe checkout validation remain unverified. Men →
+Running Shoes navigation is implemented. GitHub hosted CI has not been run.

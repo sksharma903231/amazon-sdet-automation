@@ -1,12 +1,19 @@
 # status|scenario ID|test method or candidate workflow
 IMPLEMENTED|DEC-DISC-01|Search listing exposes product names, visible prices, product links, and query evidence
+IMPLEMENTED|DEC-DISC-02|Running search variations cover partial and mixed-case terms using a DataProvider
+IMPLEMENTED|DEC-DISC-03|Unmatched search renders the explicit no-results message and no matching product evidence
 IMPLEMENTED|DEC-FILTER-01|Adidas brand selection changes results and visible product names corroborate brand
+IMPLEMENTED|DEC-FILTER-04|Men gender filter constrains product names and Clear all removes selected checkbox state
 IMPLEMENTED|DEC-PDP-01|Selected search result identity and displayed price match product details
 IMPLEMENTED|DEC-NAV-01|Product navigation supports browser back, listing refresh, and forward to the same product
-UNVERIFIED|DEC-DISC-02|No-result behavior
-UNVERIFIED|DEC-FILTER-02|Price range enforcement and reset
-UNVERIFIED|DEC-FILTER-03|Category and additional filters
-UNVERIFIED|DEC-SORT-01|Sorting and displayed numeric ordering
+IMPLEMENTED|DEC-NAV-02|Homepage Men navigation opens the Running Shoes category and relevant listing
+IMPLEMENTED|DEC-SORT-01|Price low-to-high sorts current displayed prices numerically
+UNVERIFIED|DEC-DISC-04|Empty query behavior
+UNVERIFIED|DEC-DISC-05|Leading/trailing whitespace and special-character query behavior
+BLOCKED|DEC-FILTER-02|Price range enforcement and reset; min/max controls are readonly and no user-adjustable range was observed
+UNVERIFIED|DEC-FILTER-03|Category and additional filters beyond the verified Men gender facet
+UNVERIFIED|DEC-SORT-02|Price high-to-low option does not consistently order displayed sale prices in a fresh session
 UNVERIFIED|DEC-PDP-02|Variant selection state and delivery availability
 UNVERIFIED|DEC-CART-01|Guest add-to-cart and cart product identity
 UNVERIFIED|DEC-CART-02|Cart quantity, subtotal, and removal
+UNVERIFIED|DEC-CHECKOUT-01|Safe checkout validation; cart mutation was not established so checkout was not entered

@@ -147,6 +147,22 @@ mvn --batch-mode -Dtest=EcommerceWebsiteFeasibilityTest \
   -Dassessment.mode=headless -Dbrowser=chrome -Dheadless=true test
 ```
 
+## Follow-up against the live Decathlon UI (2026-11-01)
+
+The original assessment above is a dated snapshot. A later Chrome inspection
+found Gender facets (Men, Women, Girls, Boys) and a sort menu with low-to-high
+and high-to-low price options. The Men facet and its Clear all state passed
+fresh-session assertions. Low-to-high passed numerical sale-price ordering.
+Homepage navigation opened the Men menu and the Running Shoes category, whose
+rendered heading and results passed a fresh-session scenario.
+High-to-low did not consistently order the displayed sale prices and remains
+unverified. Current min/max price inputs are read-only and no adjustable range
+control was exposed, so price enforcement remains blocked. An unmatched query
+renders “Sorry, No Results Found” alongside recommendation cards. A card-level
+Add to cart click did not provide a cart confirmation or observable cart state;
+cart and checkout flows remain unverified. See the 2026-11-01 execution record
+and current scenario inventory for exact run metrics.
+
 ## Later project state
 
 This assessment records the original application-selection investigation.

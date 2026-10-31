@@ -12,6 +12,7 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 public final class DecathlonSearchPage extends BasePage {
     private final WebDriverWait wait;
@@ -30,7 +31,10 @@ public final class DecathlonSearchPage extends BasePage {
         input.sendKeys(query);
         wait.until(d -> query.equals(input.getAttribute("value")));
         input.sendKeys(Keys.ENTER);
-        wait.until(d -> d.getCurrentUrl().contains("/search") && !productResults().isEmpty());
+        wait.until(d -> d.getCurrentUrl().contains("/search")
+                && (!productResults().isEmpty()
+                || d.findElement(org.openqa.selenium.By.tagName("body")).getText()
+                .contains("Sorry, No Results Found")));
     }
 
     /** Reads fresh listing data in one script so SPA rerenders cannot stale element handles. */
@@ -50,23 +54,59 @@ public final class DecathlonSearchPage extends BasePage {
     }
 
     public void openBrandFilter() {
+        openFilter("Brand");
+    }
+
+    public void openFilter(String filterName) {
         wait.until(d -> d.findElements(DecathlonSearchElements.FILTER_BUTTONS).stream()
                 .anyMatch(button -> button.isDisplayed() && button.isEnabled()
-                        && button.getText().trim().equalsIgnoreCase("Brand")));
+                        && button.getText().trim().equalsIgnoreCase(filterName)));
         driver.findElements(DecathlonSearchElements.FILTER_BUTTONS).stream()
                 .filter(WebElement::isDisplayed).filter(WebElement::isEnabled)
-                .filter(button -> button.getText().trim().equalsIgnoreCase("Brand"))
+                .filter(button -> button.getText().trim().equalsIgnoreCase(filterName))
                 .findFirst().orElseThrow().click();
     }
 
     public String selectBrand(String brand) {
+        return selectFacet(brand);
+    }
+
+    public String selectFacet(String option) {
         WebElement choice = wait.until(d -> d.findElements(DecathlonSearchElements.BRAND_CHOICES).stream()
                 .filter(WebElement::isDisplayed).filter(WebElement::isEnabled)
-                .filter(input -> brandLabel(input).toLowerCase().contains(brand.toLowerCase()))
+                .filter(input -> brandLabel(input).toLowerCase().contains(option.toLowerCase()))
                 .findFirst().orElse(null));
         String label = brandLabel(choice);
         choice.click();
         return label;
+    }
+
+    public void clearFilters() {
+        driver.findElements(DecathlonSearchElements.FILTER_BUTTONS).stream()
+                .filter(WebElement::isDisplayed).filter(WebElement::isEnabled)
+                .filter(button -> button.getText().trim().equalsIgnoreCase("Clear all"))
+                .findFirst().orElseThrow(() -> new IllegalStateException("Clear all filter control is absent"))
+                .click();
+        wait.until(d -> !productResults().isEmpty());
+    }
+
+    public void sortByPrice(boolean ascending) {
+        String option = ascending ? "Price (low → high)" : "Price (high → low)";
+        String firstBefore = productResults().stream().findFirst().map(ProductResult::href).orElse("");
+        driver.findElements(DecathlonSearchElements.FILTER_BUTTONS).stream()
+                .filter(WebElement::isDisplayed).filter(WebElement::isEnabled)
+                .filter(button -> button.getText().trim().matches("Most relevant|Price \\(.*\\)"))
+                .findFirst().orElseThrow(() -> new IllegalStateException("Sort control is absent"))
+                .click();
+        WebElement sortOption = wait.until(d -> d.findElements(DecathlonSearchElements.SORT_OPTIONS).stream()
+                .filter(WebElement::isDisplayed)
+                .filter(element -> element.getText().replaceAll("\\s+", " ").trim().equals(option))
+                .findFirst().orElse(null));
+        sortOption.click();
+        wait.until(d -> !productResults().isEmpty()
+                && (!firstBefore.equals(productResults().get(0).href())
+                || driver.findElements(DecathlonSearchElements.FILTER_BUTTONS).stream()
+                .anyMatch(button -> button.isDisplayed() && button.getText().trim().equals(option))));
     }
 
     private String brandLabel(WebElement input) {
@@ -80,6 +120,11 @@ public final class DecathlonSearchPage extends BasePage {
         wait.until(d -> productResults().isEmpty()
                 || !previousFirstHref.equals(productResults().get(0).href()));
         wait.until(d -> !productResults().isEmpty());
+    }
+
+    public void waitForProducts(Predicate<ProductResult> condition) {
+        wait.until(d -> !productResults().isEmpty()
+                && productResults().stream().allMatch(condition));
     }
 
     public void openProduct(String href) {

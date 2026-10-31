@@ -30,6 +30,7 @@ src/main/java/com/sksharma/automation/
   utils/                            Logging and common wait utilities
 src/test/java/com/sksharma/automation/
   tests/decathlon/                  Business-level Decathlon scenarios
+  dataproviders/                    Decathlon search query fixtures/provider
   listeners/                        TestNG reporting and diagnostics listener
   reporting/                        Thread-local logger and run analytics
   reports/                          ExtentReports lifecycle
@@ -56,13 +57,18 @@ The source of truth is [`in-scope-scenarios.txt`](src/test/resources/in-scope-sc
 | ID | Workflow | Business evidence |
 | --- | --- | --- |
 | DEC-DISC-01 | Search for running shoes | Search route and query evidence; visible product names, prices, and product-detail links |
+| DEC-DISC-02 | Partial and mixed-case search | Provider-driven `running shoes`, `running`, and `RUNNING SHOES` queries retain relevant route/product evidence |
+| DEC-DISC-03 | No-results search | Unmatched query shows “Sorry, No Results Found”; recommendation cards may still appear |
 | DEC-FILTER-01 | Apply the Adidas brand filter | Select the observed brand option; verify the listing changes and every visible result identifies Adidas |
+| DEC-FILTER-04 | Apply and clear the Men filter | Verify results identify Men and Clear all clears the selected checkbox |
 | DEC-PDP-01 | Open a search result | Verify product route, title identity, and selected listing price on the detail page |
 | DEC-NAV-01 | Listing and product navigation | Verify browser back, refresh, and forward preserve listing/product identity |
+| DEC-NAV-02 | Homepage category navigation | Open Men → Running Shoes and verify the category heading and relevant product listing |
+| DEC-SORT-01 | Price low to high | Verify visible sale prices are numerically ordered after selecting the live option |
 
-These are four unique scenarios. Separate browser sessions and repeated
-filter runs are execution evidence, not additional scenario coverage. TestNG
-groups are `search`, `filters`, `product`, and `navigation`.
+These are nine unique scenarios. `DEC-DISC-02` has three TestNG data rows;
+those rows are invocations of one business scenario. TestNG groups are
+`search`, `filters`, `sorting`, `product`, and `navigation`.
 
 ## Prerequisites and setup
 
@@ -86,8 +92,9 @@ mvn --batch-mode -Dbrowser=chrome -Dheadless=false test
 # Full suite, headless Chrome
 mvn --batch-mode -Dbrowser=chrome -Dheadless=true test
 
-# Run one TestNG group, e.g. search or navigation
+# Run one or more TestNG groups
 mvn --batch-mode -Dgroups=search -Dbrowser=chrome -Dheadless=true test
+mvn --batch-mode -Dgroups=filters,sorting -Dbrowser=chrome -Dheadless=true test
 ```
 
 Default settings are in `config.properties`: `browser=chrome`,
@@ -122,8 +129,11 @@ and are never overwritten.
 
 Analytics distinguish test methods, TestNG invocations, unique scenario IDs,
 scenario and invocation outcomes, configuration failures, failure screenshot
-capture outcomes, and unverified Decathlon candidates. Data rows do not become
-new business scenarios. No coverage or reliability percentage is reported.
+capture outcomes, blocked candidates, and unverified Decathlon candidates.
+Module outcomes and total execution duration are included. Data rows do not
+become new business scenarios. No coverage or reliability percentage is
+reported. Extent test entries include scenario descriptions and data-provider
+parameters.
 
 ## CI
 
@@ -138,16 +148,25 @@ The workflow has not yet been verified by a hosted GitHub Actions run.
   the storefront uses dynamic rendering, so selectors can still change.
 - Search browser back, refresh, and forward behavior passed in a fresh headless
   session. The site may re-encode equivalent query URLs (`%20` and `+`).
+- Men → Running Shoes homepage navigation is covered. Other menu/category
+  destinations, empty search, and leading/trailing or special-character
+  searches remain unverified.
 - Price range controls were observed, but applying a range, verifying numeric
-  enforcement, and clearing it are unverified.
-- No stable sorting control was found in the inspected listing; sort order is
-  not asserted.
-- No-results and category-filter behavior are unverified.
+  enforcement, and clearing it are blocked in the current UI: the visible
+  min/max inputs are read-only and no adjustable slider was exposed.
+- Price low-to-high is verified. High-to-low did not consistently order the
+  displayed sale prices and remains unverified.
+- Gender filtering for Men is verified. Other category and attribute filters
+  remain unverified.
+- The no-results page also displays recommendation cards; assertions identify
+  the explicit no-results message and exclude the unmatched query from product
+  evidence rather than requiring an empty page.
 - Product title and price identity are covered. Variant state and delivery
   availability are not asserted.
-- Guest cart addition could not be established: after a size was selected in
-  the feasibility probe, an enabled add-to-cart control did not appear. Cart,
-  login, checkout, and payment flows are not automated.
+- A click on a listing card's Add to cart control produced no cart confirmation
+  or cart state change. Product variants, cart quantity/subtotal/removal, and
+  checkout validation remain unverified. No login, order, or payment flow is
+  automated.
 - The target is a live site; product order, price, inventory, availability,
   and markup can change by time and location.
 

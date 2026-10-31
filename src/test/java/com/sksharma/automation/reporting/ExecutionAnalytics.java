@@ -22,13 +22,19 @@ public final class ExecutionAnalytics {
     private static final String APPLICATION_NAME = "decathlon-india";
     private static final Map<String, String> SCENARIO_IDS = Map.ofEntries(
             Map.entry("com.sksharma.automation.tests.decathlon.DecathlonSearchTest.searchShowsProductNamesPricesAndLinks", "DEC-DISC-01"),
+            Map.entry("com.sksharma.automation.tests.decathlon.DecathlonSearchTest.searchQueryVariationsReturnRelevantProducts", "DEC-DISC-02"),
+            Map.entry("com.sksharma.automation.tests.decathlon.DecathlonSearchTest.unmatchedSearchShowsNoResultsState", "DEC-DISC-03"),
             Map.entry("com.sksharma.automation.tests.decathlon.DecathlonSearchTest.adidasBrandFilterChangesAndConstrainsListing", "DEC-FILTER-01"),
             Map.entry("com.sksharma.automation.tests.decathlon.DecathlonSearchTest.productDetailsMatchSelectedSearchResult", "DEC-PDP-01"),
-            Map.entry("com.sksharma.automation.tests.decathlon.DecathlonSearchTest.productNavigationSurvivesBackRefreshAndForward", "DEC-NAV-01")
+            Map.entry("com.sksharma.automation.tests.decathlon.DecathlonSearchTest.productNavigationSurvivesBackRefreshAndForward", "DEC-NAV-01"),
+            Map.entry("com.sksharma.automation.tests.decathlon.DecathlonSearchTest.mainNavigationOpensMenRunningShoesCategory", "DEC-NAV-02"),
+            Map.entry("com.sksharma.automation.tests.decathlon.DecathlonSearchTest.genderFilterConstrainsListingAndCanBeCleared", "DEC-FILTER-04"),
+            Map.entry("com.sksharma.automation.tests.decathlon.DecathlonSearchTest.priceLowToHighSortOrdersDisplayedPricesNumerically", "DEC-SORT-01")
     );
     private static final Map<String, String> SCENARIO_MODULES = Map.of(
-            "DEC-DISC-01", "search", "DEC-FILTER-01", "filters",
-            "DEC-PDP-01", "product", "DEC-NAV-01", "navigation");
+            "DEC-DISC-01", "search", "DEC-DISC-02", "search", "DEC-DISC-03", "search",
+            "DEC-FILTER-01", "filters", "DEC-FILTER-04", "filters", "DEC-SORT-01", "sorting",
+            "DEC-PDP-01", "product", "DEC-NAV-01", "navigation", "DEC-NAV-02", "navigation");
 
     private final ConcurrentHashMap<ITestResult, Integer> results = new ConcurrentHashMap<>();
     private final LongAdder screenshotSuccesses = new LongAdder();
@@ -74,7 +80,8 @@ public final class ExecutionAnalytics {
         long passedScenarios = scenarioStatus.values().stream().filter(s -> s == ITestResult.SUCCESS).count();
         long failedScenarios = scenarioStatus.values().stream().filter(s -> s == ITestResult.FAILURE).count();
         long skippedScenarios = scenarioStatus.values().stream().filter(s -> s == ITestResult.SKIP).count();
-        long unverified = unverifiedCount();
+        long unverified = scenarioCount("UNVERIFIED");
+        long blocked = scenarioCount("BLOCKED");
         long durationMs = startTime == null ? 0 : endTime.toEpochMilli() - startTime.toEpochMilli();
         Path directory = Path.of("reports", "analytics");
         Files.createDirectories(directory);
@@ -92,6 +99,7 @@ public final class ExecutionAnalytics {
                 + "  \"failedScenarios\": " + failedScenarios + ",\n"
                 + "  \"skippedScenarios\": " + skippedScenarios + ",\n"
                 + "  \"unverifiedScenarios\": " + unverified + ",\n"
+                + "  \"blockedScenarios\": " + blocked + ",\n"
                 + "  \"passedInvocations\": " + passedInvocations + ",\n"
                 + "  \"failedInvocations\": " + failedInvocations + ",\n"
                 + "  \"skippedInvocations\": " + skippedInvocations + ",\n"
@@ -135,11 +143,11 @@ public final class ExecutionAnalytics {
         return "[" + String.join(",", items) + "]";
     }
 
-    private static long unverifiedCount() throws IOException {
+    private static long scenarioCount(String status) throws IOException {
         Path inventory = Path.of("src/test/resources/in-scope-scenarios.txt");
         if (!Files.exists(inventory)) return 0;
         try (var lines = Files.lines(inventory)) {
-            return lines.filter(line -> line.startsWith("UNVERIFIED|DEC-")).count();
+            return lines.filter(line -> line.startsWith(status + "|DEC-")).count();
         }
     }
 
@@ -147,9 +155,13 @@ public final class ExecutionAnalytics {
         List<String> items = new ArrayList<>();
         for (ITestResult result : values) {
             String method = methodName(result);
+            String parameters = java.util.Arrays.stream(result.getParameters())
+                    .map(value -> "\"" + escape(String.valueOf(value)) + "\"")
+                    .collect(java.util.stream.Collectors.joining(","));
             items.add("    {\"scenarioId\":\"" + SCENARIO_IDS.getOrDefault(method, "UNSCOPED")
                     + "\",\"method\":\"" + escape(method) + "\",\"status\":\""
-                    + statusName(results.get(result)) + "\",\"durationMs\":"
+                    + statusName(results.get(result)) + "\",\"parameters\":[" + parameters
+                    + "],\"durationMs\":"
                     + Math.max(0, result.getEndMillis() - result.getStartMillis()) + "}");
         }
         return String.join(",\n", items) + (items.isEmpty() ? "" : "\n");

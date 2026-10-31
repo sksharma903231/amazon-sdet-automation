@@ -180,7 +180,14 @@ public class ExtentReportListener implements IExecutionListener, ITestListener,
     private ExtentTest createTest(ITestResult result) {
         String testName = result.getTestClass().getName()
                 + "." + result.getMethod().getMethodName();
-        return ExtentReportManager.createTest(testName);
+        String description = result.getMethod().getDescription();
+        String scenario = description == null || description.isBlank()
+                ? testName : description + " | " + testName;
+        Object[] parameters = result.getParameters();
+        if (parameters != null && parameters.length > 0) {
+            scenario += " | parameters=" + java.util.Arrays.deepToString(parameters);
+        }
+        return ExtentReportManager.createTest(scenario);
     }
 
     private void recordReportingFailure(ITestResult result, String event,
