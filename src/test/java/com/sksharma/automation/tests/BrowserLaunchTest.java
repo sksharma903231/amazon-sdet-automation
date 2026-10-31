@@ -14,19 +14,25 @@ public class BrowserLaunchTest extends BaseTest {
         TestLogger.info("Starting Amazon India homepage validation.");
 
         AmazonHomePage amazonHomePage = new AmazonHomePage(driver);
+        amazonHomePage.waitForSearchBoxReady();
 
         String currentUrl = amazonHomePage.getCurrentUrl();
 
         TestLogger.info("Actual browser URL: " + currentUrl);
 
-        boolean isCorrectUrl =
-                currentUrl.startsWith("https://www.amazon.in");
-
         Assert.assertTrue(
-                isCorrectUrl,
+                currentUrl.startsWith("https://www.amazon.in"),
                 "Expected Amazon India URL, but found: " + currentUrl
         );
 
-        TestLogger.pass("Amazon India homepage URL verified successfully.");
+        String pageTitle = amazonHomePage.getPageTitle();
+        Assert.assertNotNull(pageTitle,
+                "Amazon India page title should not be null.");
+        Assert.assertFalse(pageTitle.isBlank(),
+                "Amazon India page title should not be blank.");
+
+        TestLogger.pass(
+                "Amazon India homepage and primary search box are ready."
+        );
     }
 }
