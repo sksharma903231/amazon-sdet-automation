@@ -1,17 +1,21 @@
 # status|scenario ID|test method or candidate workflow
-IMPLEMENTED|NAV-01|BrowserLaunchTest.shouldOpenAmazonIndia
-IMPLEMENTED|NAV-02|AmazonHomePageTest.shouldShowSearchInput
-IMPLEMENTED|NAV-03|AmazonHomePageTest.shouldEnableSearchInput
-IMPLEMENTED|DISC-01|AmazonSearchTest.shouldDisplaySearchResultsForSearchTerm
-IMPLEMENTED|NAV-04|AmazonSearchTest.shouldRetainSearchStateAfterRefresh
-IMPLEMENTED|NAV-05|AmazonSearchTest.shouldReturnToHomepageWithBrowserBack
-UNVERIFIED|DISC-02|Partial product search
-UNVERIFIED|DISC-03|Brand filter and brand metadata validation
-UNVERIFIED|DISC-04|Price range filter and numeric interval validation
-UNVERIFIED|DISC-05|Price ascending sort and numeric ordering validation
-UNVERIFIED|PDP-01|Product detail title and selected-result identity
-UNVERIFIED|PDP-02|Product detail price and availability
-UNVERIFIED|CART-01|Guest add-to-cart and product identity
-UNVERIFIED|CART-02|Guest cart quantity update
-UNVERIFIED|CART-03|Guest cart item removal
-UNVERIFIED|CART-04|Guest cart subtotal calculation
+IMPLEMENTED|DEC-DISC-01|Search listing exposes product names, visible prices, product links, and query evidence
+IMPLEMENTED|DEC-FILTER-01|Adidas brand selection changes results and visible product names corroborate brand
+IMPLEMENTED|DEC-PDP-01|Selected search result identity and displayed price match product details
+UNVERIFIED|DEC-DISC-02|No-result behavior
+UNVERIFIED|DEC-FILTER-02|Price range enforcement and reset
+UNVERIFIED|DEC-FILTER-03|Category and additional filters
+UNVERIFIED|DEC-SORT-01|Sorting and displayed numeric ordering
+UNVERIFIED|DEC-PDP-02|Variant selection state and delivery availability
+UNVERIFIED|DEC-CART-01|Guest add-to-cart and cart product identity
+UNVERIFIED|DEC-CART-02|Cart quantity, subtotal, and removal
+UNVERIFIED|AMZ-DISC-02|Amazon no-result behavior
+UNVERIFIED|AMZ-DISC-03|Amazon brand filtering and metadata
+UNVERIFIED|AMZ-DISC-04|Amazon price range enforcement
+UNVERIFIED|AMZ-DISC-05|Amazon numeric price sorting
+UNVERIFIED|AMZ-PDP-01|Amazon product detail identity and price
+UNVERIFIED|AMZ-PDP-02|Amazon product availability
+UNVERIFIED|AMZ-CART-01|Amazon guest cart addition
+UNVERIFIED|AMZ-CART-02|Amazon cart quantity update
+UNVERIFIED|AMZ-CART-03|Amazon cart item removal
+UNVERIFIED|AMZ-CART-04|Amazon cart subtotal calculation

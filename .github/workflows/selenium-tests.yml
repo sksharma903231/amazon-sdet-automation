@@ -20,8 +20,8 @@ jobs:
           cache: maven
       - name: Set up Chrome
         uses: browser-actions/setup-chrome@v1
-      - name: Run TestNG suite
-        run: mvn --batch-mode test -Dbrowser=chrome -Dheadless=true
+      - name: Run Decathlon functional suite
+        run: mvn --batch-mode -Dtest=DecathlonSearchTest -Dbrowser=chrome -Dheadless=true test
       - name: Upload test evidence
         if: always()
         uses: actions/upload-artifact@v4

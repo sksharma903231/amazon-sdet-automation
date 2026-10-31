@@ -7,33 +7,31 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.LongAdder;
 
-/** Aggregates actual TestNG invocation events and writes one JSON per run. */
+/** Writes a per-run summary based on observed TestNG callbacks. */
 public final class ExecutionAnalytics {
-    private static final java.util.Map<String, String> SCENARIO_IDS =
-            java.util.Map.of(
-                    "com.sksharma.automation.tests.BrowserLaunchTest.shouldOpenAmazonIndia", "NAV-01",
-                    "com.sksharma.automation.tests.AmazonHomePageTest.shouldShowSearchInput", "NAV-02",
-                    "com.sksharma.automation.tests.AmazonHomePageTest.shouldEnableSearchInput", "NAV-03",
-                    "com.sksharma.automation.tests.AmazonSearchTest.shouldDisplaySearchResultsForSearchTerm", "DISC-01",
-                    "com.sksharma.automation.tests.AmazonSearchTest.shouldRetainSearchStateAfterRefresh", "NAV-04",
-                    "com.sksharma.automation.tests.AmazonSearchTest.shouldReturnToHomepageWithBrowserBack", "NAV-05"
-            );
-    private static final Set<String> AUTOMATED_SCENARIOS = Set.of(
-            "com.sksharma.automation.tests.BrowserLaunchTest.shouldOpenAmazonIndia",
-            "com.sksharma.automation.tests.AmazonHomePageTest.shouldShowSearchInput",
-            "com.sksharma.automation.tests.AmazonHomePageTest.shouldEnableSearchInput",
-            "com.sksharma.automation.tests.AmazonSearchTest.shouldDisplaySearchResultsForSearchTerm",
-            "com.sksharma.automation.tests.AmazonSearchTest.shouldRetainSearchStateAfterRefresh",
-            "com.sksharma.automation.tests.AmazonSearchTest.shouldReturnToHomepageWithBrowserBack"
+    private static final Map<String, String> SCENARIO_IDS = Map.ofEntries(
+            Map.entry("com.sksharma.automation.tests.BrowserLaunchTest.shouldOpenAmazonIndia", "AMZ-NAV-01"),
+            Map.entry("com.sksharma.automation.tests.AmazonHomePageTest.shouldShowSearchInput", "AMZ-SMOKE-01"),
+            Map.entry("com.sksharma.automation.tests.AmazonHomePageTest.shouldEnableSearchInput", "AMZ-SMOKE-02"),
+            Map.entry("com.sksharma.automation.tests.AmazonSearchTest.shouldDisplaySearchResultsForSearchTerm", "AMZ-DISC-01"),
+            Map.entry("com.sksharma.automation.tests.AmazonSearchTest.shouldRetainSearchStateAfterRefresh", "AMZ-NAV-02"),
+            Map.entry("com.sksharma.automation.tests.AmazonSearchTest.shouldReturnToHomepageWithBrowserBack", "AMZ-NAV-03"),
+            Map.entry("com.sksharma.automation.tests.decathlon.DecathlonSearchTest.searchShowsProductNamesPricesAndLinks", "DEC-DISC-01"),
+            Map.entry("com.sksharma.automation.tests.decathlon.DecathlonSearchTest.adidasBrandFilterChangesAndConstrainsListing", "DEC-FILTER-01"),
+            Map.entry("com.sksharma.automation.tests.decathlon.DecathlonSearchTest.productDetailsMatchSelectedSearchResult", "DEC-PDP-01")
     );
-    private final ConcurrentHashMap<ITestResult, Integer> invocations =
-            new ConcurrentHashMap<>();
+
+    private final ConcurrentHashMap<ITestResult, Integer> results = new ConcurrentHashMap<>();
     private final LongAdder screenshotSuccesses = new LongAdder();
     private final LongAdder screenshotFailures = new LongAdder();
     private final LongAdder configurationFailures = new LongAdder();
@@ -41,7 +39,7 @@ public final class ExecutionAnalytics {
     private String executionId;
 
     public synchronized void start() {
-        invocations.clear();
+        results.clear();
         screenshotSuccesses.reset();
         screenshotFailures.reset();
         configurationFailures.reset();
@@ -49,134 +47,126 @@ public final class ExecutionAnalytics {
         executionId = UUID.randomUUID().toString();
     }
 
-    public void record(ITestResult result) {
-        invocations.putIfAbsent(result, result.getStatus());
-    }
-
+    public void record(ITestResult result) { results.putIfAbsent(result, result.getStatus()); }
     public void screenshotCaptured() { screenshotSuccesses.increment(); }
     public void screenshotCaptureFailed() { screenshotFailures.increment(); }
     public void configurationFailed() { configurationFailures.increment(); }
 
     public synchronized void writeSummary() throws IOException {
         Instant endTime = Instant.now();
-        long passed = 0, failed = 0, skipped = 0, durationTotal = 0;
-        Set<String> scenarios = new HashSet<>();
-        for (ITestResult result : invocations.keySet()) {
-            scenarios.add(result.getTestClass().getName() + "."
-                    + result.getMethod().getMethodName());
-            durationTotal += Math.max(0, result.getEndMillis() - result.getStartMillis());
-            int status = invocations.get(result);
-            if (status == ITestResult.SUCCESS) passed++;
-            else if (status == ITestResult.FAILURE) failed++;
-            else if (status == ITestResult.SKIP) skipped++;
+        List<ITestResult> ordered = results.keySet().stream()
+                .sorted(Comparator.comparingLong(ITestResult::getStartMillis)).toList();
+        Map<String, Integer> scenarioStatus = new LinkedHashMap<>();
+        java.util.Set<String> methods = new java.util.HashSet<>();
+        java.util.Set<String> applications = new java.util.HashSet<>();
+        long passedInvocations = 0, failedInvocations = 0, skippedInvocations = 0;
+        for (ITestResult result : ordered) {
+            String method = methodName(result);
+            methods.add(method);
+            String scenario = SCENARIO_IDS.get(method);
+            if (scenario != null) applications.add(scenario.startsWith("DEC-") ? "DEC" : "AMZ");
+            if (scenario != null) scenarioStatus.merge(scenario, results.get(result),
+                    ExecutionAnalytics::worstStatus);
+            switch (results.get(result)) {
+                case ITestResult.SUCCESS -> passedInvocations++;
+                case ITestResult.FAILURE -> failedInvocations++;
+                case ITestResult.SKIP -> skippedInvocations++;
+                default -> { }
+            }
         }
-        long total = invocations.size();
-        Set<String> executedMethods = invocations.entrySet().stream()
-                .filter(entry -> entry.getValue() != ITestResult.SKIP)
-                .map(entry -> methodName(entry.getKey()))
-                .collect(java.util.stream.Collectors.toSet());
-        long executedInScope = executedMethods.stream()
-                .filter(SCENARIO_IDS::containsKey).count();
-        long suiteDuration = Math.max(0, endTime.toEpochMilli()
-                - startTime.toEpochMilli());
-        double passRate = passed + failed == 0 ? 0.0
-                : passed * 100.0 / (passed + failed);
-        Set<String> documentedScenarios = documentedScenarios();
-        long unverifiedCandidates = scenarioDefinitions().stream()
-                .filter(line -> line.startsWith("UNVERIFIED|"))
-                .count();
-        long documented = documentedScenarios.size();
-        long automated = documentedScenarios.stream()
-                .filter(method -> AUTOMATED_SCENARIOS.contains(
-                        "com.sksharma.automation.tests." + method)).count();
-        double coverage = documented == 0 ? 0.0 : automated * 100.0 / documented;
-        double executionCoverage = documented == 0 ? 0.0
-                : executedInScope * 100.0 / documented;
-        long screenshotAttempts = screenshotSuccesses.sum() + screenshotFailures.sum();
-        double screenshotRate = screenshotAttempts == 0 ? 0.0
-                : screenshotSuccesses.sum() * 100.0 / screenshotAttempts;
+        long passedScenarios = scenarioStatus.values().stream().filter(s -> s == ITestResult.SUCCESS).count();
+        long failedScenarios = scenarioStatus.values().stream().filter(s -> s == ITestResult.FAILURE).count();
+        long skippedScenarios = scenarioStatus.values().stream().filter(s -> s == ITestResult.SKIP).count();
+        Map<String, Long> unverifiedByApplication = unverifiedCounts(applications);
+        long unverified = unverifiedByApplication.values().stream().mapToLong(Long::longValue).sum();
         Path directory = Path.of("reports", "analytics");
         Files.createDirectories(directory);
-        Path output = directory.resolve("execution-" + startTime.toEpochMilli()
-                + "-" + executionId + ".json");
+        Path output = directory.resolve("execution-" + startTime.toEpochMilli() + "-" + executionId + ".json");
         String json = "{\n"
                 + "  \"executionId\": \"" + executionId + "\",\n"
                 + "  \"startTime\": \"" + startTime + "\",\n"
                 + "  \"endTime\": \"" + endTime + "\",\n"
-                + "  \"totalDurationMs\": " + suiteDuration + ",\n"
-                + "  \"totalInvocations\": " + total + ",\n"
-                + "  \"uniqueScenarios\": " + scenarios.size() + ",\n"
-                + "  \"passed\": " + passed + ",\n"
-                + "  \"failed\": " + failed + ",\n"
-                + "  \"skipped\": " + skipped + ",\n"
+                + "  \"totalTestMethods\": " + methods.size() + ",\n"
+                + "  \"totalInvocations\": " + ordered.size() + ",\n"
+                + "  \"uniqueBusinessScenarios\": " + scenarioStatus.size() + ",\n"
+                + "  \"passedScenarios\": " + passedScenarios + ",\n"
+                + "  \"failedScenarios\": " + failedScenarios + ",\n"
+                + "  \"skippedScenarios\": " + skippedScenarios + ",\n"
+                + "  \"passedInvocations\": " + passedInvocations + ",\n"
+                + "  \"failedInvocations\": " + failedInvocations + ",\n"
+                + "  \"skippedInvocations\": " + skippedInvocations + ",\n"
                 + "  \"configurationFailures\": " + configurationFailures.sum() + ",\n"
-                + "  \"passRate\": " + decimal(passRate) + ",\n"
-                + "  \"averageTestDurationMs\": "
-                + (total == 0 ? 0 : durationTotal / total) + ",\n"
-                + "  \"screenshotCaptureSuccessRate\": "
-                + decimal(screenshotRate) + ",\n"
+                + "  \"unverifiedCandidateScenarios\": " + unverified + ",\n"
+                + "  \"unverifiedCandidatesByApplication\": " + mapJson(unverifiedByApplication) + ",\n"
                 + "  \"screenshotCaptureSuccesses\": " + screenshotSuccesses.sum() + ",\n"
                 + "  \"screenshotCaptureFailures\": " + screenshotFailures.sum() + ",\n"
-                + "  \"automatedScenarios\": " + automated + ",\n"
-                + "  \"documentedScenarios\": " + documented + ",\n"
-                + "  \"unverifiedCandidates\": " + unverifiedCandidates + ",\n"
-                + "  \"automationCoveragePercentage\": " + decimal(coverage) + ",\n"
-                + "  \"executedInScopeScenarios\": " + executedInScope + ",\n"
-                + "  \"executionScenarioCoveragePercentage\": "
-                + decimal(executionCoverage) + ",\n"
-                + "  \"invocations\": [\n" + invocationDetails() + "  ]\n"
-                + "}\n";
-        Files.writeString(output, json, StandardOpenOption.CREATE_NEW,
-                StandardOpenOption.WRITE);
+                + "  \"scenarioResults\": " + scenarioJson(scenarioStatus) + ",\n"
+                + "  \"invocations\": [\n" + invocationJson(ordered) + "  ]\n}\n";
+        Files.writeString(output, json, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
     }
 
-    private String invocationDetails() {
-        var results = invocations.keySet().stream()
-                .sorted(java.util.Comparator.comparingLong(ITestResult::getStartMillis))
-                .toList();
-        StringBuilder details = new StringBuilder();
-        for (int i = 0; i < results.size(); i++) {
-            ITestResult result = results.get(i);
-            String name = methodName(result);
-            String status = switch (invocations.get(result)) {
-                case ITestResult.SUCCESS -> "passed";
-                case ITestResult.FAILURE -> "failed";
-                case ITestResult.SKIP -> "skipped";
-                default -> "unknown";
-            };
-            details.append("    {\"scenarioId\": \"")
-                    .append(SCENARIO_IDS.getOrDefault(name, "UNSCOPED"))
-                    .append("\", \"scenario\": \"").append(name)
-                    .append("\", \"status\": \"").append(status)
-                    .append("\", \"durationMs\": ")
-                    .append(Math.max(0, result.getEndMillis() - result.getStartMillis()))
-                    .append("}").append(i + 1 == results.size() ? "\n" : ",\n");
+    private static int worstStatus(int previous, int next) {
+        if (previous == ITestResult.FAILURE || next == ITestResult.FAILURE) return ITestResult.FAILURE;
+        if (previous == ITestResult.SKIP || next == ITestResult.SKIP) return ITestResult.SKIP;
+        return ITestResult.SUCCESS;
+    }
+
+    private String scenarioJson(Map<String, Integer> values) {
+        List<String> items = new ArrayList<>();
+        values.forEach((id, status) -> items.add("{\"scenarioId\":\"" + id
+                + "\",\"status\":\"" + statusName(status) + "\"}"));
+        return "[" + String.join(",", items) + "]";
+    }
+
+    private static Map<String, Long> unverifiedCounts(java.util.Set<String> applications)
+            throws IOException {
+        Map<String, Long> counts = new LinkedHashMap<>();
+        Path inventory = Path.of("src/test/resources/in-scope-scenarios.txt");
+        if (!Files.exists(inventory)) return counts;
+        List<String> definitions;
+        try (var lines = Files.lines(inventory)) {
+            definitions = lines.toList();
         }
-        return details.toString();
-    }
-
-    private Set<String> documentedScenarios() throws IOException {
-        return scenarioDefinitions().stream()
-                .filter(line -> line.startsWith("IMPLEMENTED|"))
-                .map(line -> line.split("\\|", 3)[2])
-                .collect(java.util.stream.Collectors.toUnmodifiableSet());
-    }
-
-    private java.util.List<String> scenarioDefinitions() throws IOException {
-        try (var lines = Files.lines(Path.of("src", "test", "resources",
-                "in-scope-scenarios.txt"))) {
-            return lines.map(String::trim)
-                    .filter(line -> !line.isEmpty() && !line.startsWith("#"))
-                    .toList();
+        for (String application : applications) {
+            String prefix = application + "-";
+            long count = definitions.stream().filter(line -> line.startsWith("UNVERIFIED|"))
+                    .filter(line -> line.split("\\|", 3).length > 1)
+                    .filter(line -> line.split("\\|", 3)[1].startsWith(prefix)).count();
+            counts.put(application.equals("DEC") ? "DECATHLON" : "AMAZON", count);
         }
+        return counts;
+    }
+
+    private String mapJson(Map<String, Long> values) {
+        List<String> items = new ArrayList<>();
+        values.forEach((application, count) -> items.add("\"" + application + "\":" + count));
+        return "{" + String.join(",", items) + "}";
+    }
+
+    private String invocationJson(List<ITestResult> values) {
+        List<String> items = new ArrayList<>();
+        for (ITestResult result : values) {
+            String method = methodName(result);
+            items.add("    {\"scenarioId\":\"" + SCENARIO_IDS.getOrDefault(method, "UNSCOPED")
+                    + "\",\"method\":\"" + escape(method) + "\",\"status\":\""
+                    + statusName(results.get(result)) + "\",\"durationMs\":"
+                    + Math.max(0, result.getEndMillis() - result.getStartMillis()) + "}");
+        }
+        return String.join(",\n", items) + (items.isEmpty() ? "" : "\n");
     }
 
     private static String methodName(ITestResult result) {
-        return result.getTestClass().getName() + "."
-                + result.getMethod().getMethodName();
+        return result.getTestClass().getName() + "." + result.getMethod().getMethodName();
     }
-
-    private String decimal(double value) {
-        return String.format(java.util.Locale.ROOT, "%.2f", value);
+    private static String statusName(int status) {
+        return switch (status) {
+            case ITestResult.SUCCESS -> "passed";
+            case ITestResult.FAILURE -> "failed";
+            case ITestResult.SKIP -> "skipped";
+            default -> "unknown";
+        };
+    }
+    private static String escape(String value) {
+        return value.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 }
