@@ -42,6 +42,10 @@ public final class TestLogger {
         log("skip", test -> test.skip(message));
     }
 
+    public static void skip(Throwable throwable) {
+        log("skip", test -> test.skip(throwable));
+    }
+
     public static void attachScreenshot(String path) {
         log("screenshot", test ->
                 test.addScreenCaptureFromPath(path, "Failure screenshot"));

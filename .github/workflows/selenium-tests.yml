@@ -1,0 +1,34 @@
+name: Selenium UI tests
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Java 21 and Maven cache
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Set up Chrome
+        uses: browser-actions/setup-chrome@v1
+      - name: Run TestNG suite
+        run: mvn --batch-mode test -Dbrowser=chrome -Dheadless=true
+      - name: Upload test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: selenium-test-evidence-${{ github.run_id }}
+          if-no-files-found: warn
+          path: |
+            target/surefire-reports/
+            reports/
+            logs/

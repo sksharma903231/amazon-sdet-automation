@@ -110,6 +110,20 @@ public class MethodFactory {
         return perform("read current URL", null, driver::getCurrentUrl);
     }
 
+    public void refresh() {
+        perform("refresh current page", null, () -> {
+            driver.navigate().refresh();
+            return null;
+        });
+    }
+
+    public void navigateBack() {
+        perform("navigate back", null, () -> {
+            driver.navigate().back();
+            return null;
+        });
+    }
+
     public String getPageTitle() {
         return perform("read page title", null, driver::getTitle);
     }

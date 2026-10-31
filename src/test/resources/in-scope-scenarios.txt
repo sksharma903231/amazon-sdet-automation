@@ -1,0 +1,17 @@
+# status|scenario ID|test method or candidate workflow
+IMPLEMENTED|NAV-01|BrowserLaunchTest.shouldOpenAmazonIndia
+IMPLEMENTED|NAV-02|AmazonHomePageTest.shouldShowSearchInput
+IMPLEMENTED|NAV-03|AmazonHomePageTest.shouldEnableSearchInput
+IMPLEMENTED|DISC-01|AmazonSearchTest.shouldDisplaySearchResultsForSearchTerm
+IMPLEMENTED|NAV-04|AmazonSearchTest.shouldRetainSearchStateAfterRefresh
+IMPLEMENTED|NAV-05|AmazonSearchTest.shouldReturnToHomepageWithBrowserBack
+UNVERIFIED|DISC-02|Partial product search
+UNVERIFIED|DISC-03|Brand filter and brand metadata validation
+UNVERIFIED|DISC-04|Price range filter and numeric interval validation
+UNVERIFIED|DISC-05|Price ascending sort and numeric ordering validation
+UNVERIFIED|PDP-01|Product detail title and selected-result identity
+UNVERIFIED|PDP-02|Product detail price and availability
+UNVERIFIED|CART-01|Guest add-to-cart and product identity
+UNVERIFIED|CART-02|Guest cart quantity update
+UNVERIFIED|CART-03|Guest cart item removal
+UNVERIFIED|CART-04|Guest cart subtotal calculation

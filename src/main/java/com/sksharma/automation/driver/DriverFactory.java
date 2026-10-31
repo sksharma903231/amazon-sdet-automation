@@ -3,6 +3,7 @@ package com.sksharma.automation.driver;
 import com.sksharma.automation.config.ConfigReader;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 
 
 public class DriverFactory {
@@ -25,7 +26,12 @@ public class DriverFactory {
 
         WebDriver driver;
         if (browser.equalsIgnoreCase("chrome")) {
-            driver = new ChromeDriver();
+            ChromeOptions options = new ChromeOptions();
+            if (Boolean.parseBoolean(ConfigReader.getProperty("headless"))) {
+                options.addArguments("--headless=new", "--no-sandbox",
+                        "--disable-dev-shm-usage");
+            }
+            driver = new ChromeDriver(options);
         } else {
             throw new IllegalArgumentException("Unsupported browser: " + browser);
         }

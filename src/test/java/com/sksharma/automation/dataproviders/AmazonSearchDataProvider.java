@@ -8,7 +8,9 @@ public class AmazonSearchDataProvider {
     public static Object[][] searchTerms() {
         return new Object[][]{
                 {"laptop"},
-                {"headphones"}
+                {"headphones"},
+                {"wireless mouse"},
+                {"keyboards"}
         };
     }
 }

@@ -65,6 +65,16 @@ public final class ExtentReportManager {
         return extentReports;
     }
 
+    public static synchronized com.aventstack.extentreports.ExtentTest createTest(
+            String name) {
+        if (extentReports == null) {
+            throw new IllegalStateException(
+                    "ExtentReports has not been initialized for this execution."
+            );
+        }
+        return extentReports.createTest(name);
+    }
+
     public static synchronized void finishExecution() {
         if (extentReports == null) {
             return;

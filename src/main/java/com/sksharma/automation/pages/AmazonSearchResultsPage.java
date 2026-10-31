@@ -30,4 +30,16 @@ public class AmazonSearchResultsPage extends BasePage {
     public String getFirstResultTitle() {
         return methods.getText(AmazonSearchResultsElements.FIRST_RESULT_TITLE);
     }
+
+    public String getCurrentUrl() {
+        return methods.getCurrentUrl();
+    }
+
+    public void refresh() {
+        methods.refresh();
+    }
+
+    public void goBack() {
+        methods.navigateBack();
+    }
 }

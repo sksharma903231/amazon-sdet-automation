@@ -3,14 +3,15 @@ package com.sksharma.automation.listeners;
 
 import com.sksharma.automation.driver.DriverFactory;
 import com.aventstack.extentreports.ExtentTest;
-import com.aventstack.extentreports.ExtentReports;
 import com.sksharma.automation.reports.ExtentReportManager;
 import com.sksharma.automation.reporting.TestLogger;
+import com.sksharma.automation.reporting.ExecutionAnalytics;
 import com.sksharma.automation.utils.LoggerUtils;
 import org.apache.logging.log4j.Logger;
 import org.testng.IExecutionListener;
 import org.testng.ITestListener;
 import org.testng.ITestResult;
+import org.testng.IConfigurationListener;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
@@ -23,13 +24,16 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
-public class ExtentReportListener implements IExecutionListener, ITestListener {
+public class ExtentReportListener implements IExecutionListener, ITestListener,
+        IConfigurationListener {
 
+    private static final ExecutionAnalytics ANALYTICS = new ExecutionAnalytics();
     private static final Logger LOGGER =
             LoggerUtils.getLogger(ExtentReportListener.class);
 
     @Override
     public void onExecutionStart() {
+        ANALYTICS.start();
         try {
             ExtentReportManager.startExecution();
         } catch (RuntimeException | AssertionError reportingFailure) {
@@ -40,10 +44,20 @@ public class ExtentReportListener implements IExecutionListener, ITestListener {
     @Override
     public void onExecutionFinish() {
         try {
+            ANALYTICS.writeSummary();
+        } catch (Throwable analyticsFailure) {
+            recordReportingFailure(null, "execution analytics", analyticsFailure);
+        }
+        try {
             ExtentReportManager.finishExecution();
         } catch (RuntimeException | AssertionError reportingFailure) {
             recordReportingFailure(null, "execution finish", reportingFailure);
         }
+    }
+
+    @Override
+    public void onConfigurationFailure(ITestResult result) {
+        ANALYTICS.configurationFailed();
     }
 
     @Override
@@ -61,12 +75,14 @@ public class ExtentReportListener implements IExecutionListener, ITestListener {
 
     @Override
     public void onTestSuccess(ITestResult result) {
+        ANALYTICS.record(result);
         completeTest(result, "success", () ->
                 TestLogger.pass("Test passed successfully."));
     }
 
     @Override
     public void onTestFailure(ITestResult result) {
+        ANALYTICS.record(result);
         completeTest(result, "failure", () -> {
             captureFailureScreenshot(result);
             Throwable failure = result.getThrowable();
@@ -98,8 +114,10 @@ public class ExtentReportListener implements IExecutionListener, ITestListener {
             Files.write(screenshotDirectory.resolve(fileName), screenshot,
                     StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
 
+            ANALYTICS.screenshotCaptured();
             TestLogger.attachScreenshot("screenshots/" + fileName);
         } catch (Throwable screenshotFailure) {
+            ANALYTICS.screenshotCaptureFailed();
             try {
                 recordReportingFailure(result, "failure screenshot capture",
                         screenshotFailure);
@@ -113,12 +131,17 @@ public class ExtentReportListener implements IExecutionListener, ITestListener {
 
     @Override
     public void onTestSkipped(ITestResult result) {
-        completeTest(result, "skip", () ->
-                TestLogger.skip("Test skipped."));
+        ANALYTICS.record(result);
+        completeTest(result, "skip", () -> {
+            Throwable cause = result.getThrowable();
+            if (cause == null) TestLogger.skip("Test skipped.");
+            else TestLogger.skip(cause);
+        });
     }
 
     @Override
     public void onTestFailedButWithinSuccessPercentage(ITestResult result) {
+        ANALYTICS.record(result);
         completeTest(result, "success-percentage failure", () -> {
             Throwable failure = result.getThrowable();
             if (failure == null) {
@@ -155,10 +178,9 @@ public class ExtentReportListener implements IExecutionListener, ITestListener {
     }
 
     private ExtentTest createTest(ITestResult result) {
-        ExtentReports extentReports = ExtentReportManager.getInstance();
         String testName = result.getTestClass().getName()
                 + "." + result.getMethod().getMethodName();
-        return extentReports.createTest(testName);
+        return ExtentReportManager.createTest(testName);
     }
 
     private void recordReportingFailure(ITestResult result, String event,

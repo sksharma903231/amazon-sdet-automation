@@ -19,6 +19,14 @@ public class AmazonHomePage extends BasePage {
         methods.waitForClickability(AmazonHomeElements.SEARCH_BOX);
     }
 
+    public boolean isSearchBoxDisplayed() {
+        return methods.isDisplayed(AmazonHomeElements.SEARCH_BOX);
+    }
+
+    public boolean isSearchBoxEnabled() {
+        return methods.isEnabled(AmazonHomeElements.SEARCH_BOX);
+    }
+
     public AmazonSearchResultsPage searchFor(String searchTerm) {
         if (searchTerm == null || searchTerm.isBlank()) {
             throw new IllegalArgumentException("Search term must not be null or blank");
