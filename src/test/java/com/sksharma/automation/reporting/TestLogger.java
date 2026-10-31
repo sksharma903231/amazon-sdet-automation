@@ -42,6 +42,11 @@ public final class TestLogger {
         log("skip", test -> test.skip(message));
     }
 
+    public static void attachScreenshot(String path) {
+        log("screenshot", test ->
+                test.addScreenCaptureFromPath(path, "Failure screenshot"));
+    }
+
     public static void removeTest() {
         EXTENT_TEST.remove();
     }

@@ -1,6 +1,7 @@
 
 package com.sksharma.automation.listeners;
 
+import com.sksharma.automation.driver.DriverFactory;
 import com.aventstack.extentreports.ExtentTest;
 import com.aventstack.extentreports.ExtentReports;
 import com.sksharma.automation.reports.ExtentReportManager;
@@ -10,6 +11,17 @@ import org.apache.logging.log4j.Logger;
 import org.testng.IExecutionListener;
 import org.testng.ITestListener;
 import org.testng.ITestResult;
+import org.openqa.selenium.OutputType;
+import org.openqa.selenium.TakesScreenshot;
+import org.openqa.selenium.WebDriver;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.UUID;
 
 public class ExtentReportListener implements IExecutionListener, ITestListener {
 
@@ -56,6 +68,7 @@ public class ExtentReportListener implements IExecutionListener, ITestListener {
     @Override
     public void onTestFailure(ITestResult result) {
         completeTest(result, "failure", () -> {
+            captureFailureScreenshot(result);
             Throwable failure = result.getThrowable();
             if (failure == null) {
                 TestLogger.fail("Test failed without a throwable.");
@@ -63,6 +76,39 @@ public class ExtentReportListener implements IExecutionListener, ITestListener {
                 TestLogger.fail(failure);
             }
         });
+    }
+
+    private void captureFailureScreenshot(ITestResult result) {
+        try {
+            WebDriver driver = DriverFactory.getDriver();
+            byte[] screenshot = ((TakesScreenshot) driver)
+                    .getScreenshotAs(OutputType.BYTES);
+
+            String testId = (result.getTestClass().getName() + "_"
+                    + result.getMethod().getMethodName())
+                    .replaceAll("[^A-Za-z0-9._-]", "_");
+            String timestamp = LocalDateTime.now().format(
+                    DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss-SSS")
+            );
+            String fileName = testId + "_" + timestamp + "_"
+                    + UUID.randomUUID() + ".png";
+
+            Path screenshotDirectory = Paths.get("reports", "screenshots");
+            Files.createDirectories(screenshotDirectory);
+            Files.write(screenshotDirectory.resolve(fileName), screenshot,
+                    StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
+
+            TestLogger.attachScreenshot("screenshots/" + fileName);
+        } catch (Throwable screenshotFailure) {
+            try {
+                recordReportingFailure(result, "failure screenshot capture",
+                        screenshotFailure);
+            } catch (Throwable diagnosticFailure) {
+                if (diagnosticFailure != screenshotFailure) {
+                    screenshotFailure.addSuppressed(diagnosticFailure);
+                }
+            }
+        }
     }
 
     @Override
