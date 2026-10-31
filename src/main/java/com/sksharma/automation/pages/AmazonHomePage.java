@@ -1,26 +1,38 @@
 package com.sksharma.automation.pages;
 
-import org.openqa.selenium.By;
+import com.sksharma.automation.config.ConfigReader;
+import com.sksharma.automation.elements.AmazonHomeElements;
 import org.openqa.selenium.WebDriver;
 
 public class AmazonHomePage extends BasePage {
-
-    private static final By SEARCH_BOX = By.id("twotabsearchtextbox");
 
     public AmazonHomePage(WebDriver driver) {
         super(driver);
     }
 
-    public String getPageTitle() {
-        return driver.getTitle();
-    }
-
-    public String getCurrentUrl() {
-        return driver.getCurrentUrl();
+    public void open() {
+        methods.navigateTo(ConfigReader.getProperty("base.url"));
     }
 
     public void waitForSearchBoxReady() {
-        waitForElementVisible(SEARCH_BOX);
-        waitForElementClickable(SEARCH_BOX);
+        methods.waitForVisibility(AmazonHomeElements.SEARCH_BOX);
+        methods.waitForClickability(AmazonHomeElements.SEARCH_BOX);
+    }
+
+    public AmazonSearchResultsPage searchFor(String searchTerm) {
+        if (searchTerm == null || searchTerm.isBlank()) {
+            throw new IllegalArgumentException("Search term must not be null or blank");
+        }
+        methods.type(AmazonHomeElements.SEARCH_BOX, searchTerm);
+        methods.submit(AmazonHomeElements.SEARCH_BOX);
+        return new AmazonSearchResultsPage(driver);
+    }
+
+    public String getPageTitle() {
+        return methods.getPageTitle();
+    }
+
+    public String getCurrentUrl() {
+        return methods.getCurrentUrl();
     }
 }

@@ -1,7 +1,6 @@
 
 package com.sksharma.automation.tests;
 
-import com.sksharma.automation.config.ConfigReader;
 import org.openqa.selenium.WebDriver;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -15,7 +14,6 @@ public class BaseTest {
     @BeforeMethod
     public void setUp() {
         driver = DriverFactory.createDriver();
-        driver.get(ConfigReader.getProperty("base.url"));
     }
 
     @AfterMethod(alwaysRun = true)

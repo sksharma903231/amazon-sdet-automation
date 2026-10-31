@@ -1,6 +1,7 @@
 
 package com.sksharma.automation.tests;
 
+import com.sksharma.automation.config.ConfigReader;
 import com.sksharma.automation.pages.AmazonHomePage;
 import com.sksharma.automation.reporting.TestLogger;
 import org.testng.Assert;
@@ -14,15 +15,18 @@ public class BrowserLaunchTest extends BaseTest {
         TestLogger.info("Starting Amazon India homepage validation.");
 
         AmazonHomePage amazonHomePage = new AmazonHomePage(driver);
+        amazonHomePage.open();
         amazonHomePage.waitForSearchBoxReady();
 
         String currentUrl = amazonHomePage.getCurrentUrl();
+        String baseUrl = ConfigReader.getProperty("base.url");
 
         TestLogger.info("Actual browser URL: " + currentUrl);
 
         Assert.assertTrue(
-                currentUrl.startsWith("https://www.amazon.in"),
-                "Expected Amazon India URL, but found: " + currentUrl
+                currentUrl.startsWith(baseUrl),
+                "Expected current URL to start with configured base URL "
+                        + baseUrl + ", but found: " + currentUrl
         );
 
         String pageTitle = amazonHomePage.getPageTitle();
