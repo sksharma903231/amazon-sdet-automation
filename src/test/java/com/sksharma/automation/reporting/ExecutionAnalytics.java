@@ -23,8 +23,12 @@ public final class ExecutionAnalytics {
     private static final Map<String, String> SCENARIO_IDS = Map.ofEntries(
             Map.entry("com.sksharma.automation.tests.decathlon.DecathlonSearchTest.searchShowsProductNamesPricesAndLinks", "DEC-DISC-01"),
             Map.entry("com.sksharma.automation.tests.decathlon.DecathlonSearchTest.adidasBrandFilterChangesAndConstrainsListing", "DEC-FILTER-01"),
-            Map.entry("com.sksharma.automation.tests.decathlon.DecathlonSearchTest.productDetailsMatchSelectedSearchResult", "DEC-PDP-01")
+            Map.entry("com.sksharma.automation.tests.decathlon.DecathlonSearchTest.productDetailsMatchSelectedSearchResult", "DEC-PDP-01"),
+            Map.entry("com.sksharma.automation.tests.decathlon.DecathlonSearchTest.productNavigationSurvivesBackRefreshAndForward", "DEC-NAV-01")
     );
+    private static final Map<String, String> SCENARIO_MODULES = Map.of(
+            "DEC-DISC-01", "search", "DEC-FILTER-01", "filters",
+            "DEC-PDP-01", "product", "DEC-NAV-01", "navigation");
 
     private final ConcurrentHashMap<ITestResult, Integer> results = new ConcurrentHashMap<>();
     private final LongAdder screenshotSuccesses = new LongAdder();
@@ -71,6 +75,7 @@ public final class ExecutionAnalytics {
         long failedScenarios = scenarioStatus.values().stream().filter(s -> s == ITestResult.FAILURE).count();
         long skippedScenarios = scenarioStatus.values().stream().filter(s -> s == ITestResult.SKIP).count();
         long unverified = unverifiedCount();
+        long durationMs = startTime == null ? 0 : endTime.toEpochMilli() - startTime.toEpochMilli();
         Path directory = Path.of("reports", "analytics");
         Files.createDirectories(directory);
         Path output = directory.resolve("execution-" + startTime.toEpochMilli() + "-" + executionId + ".json");
@@ -86,16 +91,35 @@ public final class ExecutionAnalytics {
                 + "  \"passedScenarios\": " + passedScenarios + ",\n"
                 + "  \"failedScenarios\": " + failedScenarios + ",\n"
                 + "  \"skippedScenarios\": " + skippedScenarios + ",\n"
+                + "  \"unverifiedScenarios\": " + unverified + ",\n"
                 + "  \"passedInvocations\": " + passedInvocations + ",\n"
                 + "  \"failedInvocations\": " + failedInvocations + ",\n"
                 + "  \"skippedInvocations\": " + skippedInvocations + ",\n"
                 + "  \"configurationFailures\": " + configurationFailures.sum() + ",\n"
+                + "  \"executionDurationMs\": " + durationMs + ",\n"
                 + "  \"unverifiedCandidateScenarios\": " + unverified + ",\n"
                 + "  \"screenshotCaptureSuccesses\": " + screenshotSuccesses.sum() + ",\n"
                 + "  \"screenshotCaptureFailures\": " + screenshotFailures.sum() + ",\n"
                 + "  \"scenarioResults\": " + scenarioJson(scenarioStatus) + ",\n"
+                + "  \"moduleOutcomes\": " + moduleJson(scenarioStatus) + ",\n"
                 + "  \"invocations\": [\n" + invocationJson(ordered) + "  ]\n}\n";
         Files.writeString(output, json, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
+    }
+
+    private String moduleJson(Map<String, Integer> values) {
+        Map<String, Map<String, Long>> modules = new LinkedHashMap<>();
+        values.forEach((id, status) -> {
+            String module = SCENARIO_MODULES.getOrDefault(id, "unmapped");
+            Map<String, Long> counts = modules.computeIfAbsent(module, ignored ->
+                    new LinkedHashMap<>(Map.of("passed", 0L, "failed", 0L, "skipped", 0L)));
+            String key = statusName(status);
+            if (counts.containsKey(key)) counts.compute(key, (ignored, count) -> count + 1);
+        });
+        List<String> entries = new ArrayList<>();
+        modules.forEach((name, counts) -> entries.add("\"" + name + "\":{\"passed\":"
+                + counts.get("passed") + ",\"failed\":" + counts.get("failed")
+                + ",\"skipped\":" + counts.get("skipped") + "}"));
+        return "{" + String.join(",", entries) + "}";
     }
 
     private static int worstStatus(int previous, int next) {

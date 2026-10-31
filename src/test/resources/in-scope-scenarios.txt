@@ -2,6 +2,7 @@
 IMPLEMENTED|DEC-DISC-01|Search listing exposes product names, visible prices, product links, and query evidence
 IMPLEMENTED|DEC-FILTER-01|Adidas brand selection changes results and visible product names corroborate brand
 IMPLEMENTED|DEC-PDP-01|Selected search result identity and displayed price match product details
+IMPLEMENTED|DEC-NAV-01|Product navigation supports browser back, listing refresh, and forward to the same product
 UNVERIFIED|DEC-DISC-02|No-result behavior
 UNVERIFIED|DEC-FILTER-02|Price range enforcement and reset
 UNVERIFIED|DEC-FILTER-03|Category and additional filters

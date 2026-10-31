@@ -3,10 +3,15 @@ package com.sksharma.automation.tests.decathlon;
 import com.sksharma.automation.applications.decathlon.pages.DecathlonProductPage;
 import com.sksharma.automation.applications.decathlon.pages.DecathlonHomePage;
 import com.sksharma.automation.applications.decathlon.pages.DecathlonSearchPage;
+import com.sksharma.automation.config.ConfigReader;
 import com.sksharma.automation.tests.BaseTest;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+import org.openqa.selenium.support.ui.WebDriverWait;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
@@ -14,7 +19,7 @@ public class DecathlonSearchTest extends BaseTest {
     private static final String QUERY = "running shoes";
     private static final Pattern PRICE = Pattern.compile("₹\\s*[\\d,]+");
 
-    @Test(description = "DISC-IN-01: search returns identifiable priced product links")
+    @Test(groups = "search", description = "DEC-DISC-01: search returns identifiable priced product links")
     public void searchShowsProductNamesPricesAndLinks() {
         DecathlonHomePage home = new DecathlonHomePage(driver).open();
         DecathlonSearchPage page = home.searchFor(QUERY);
@@ -33,7 +38,7 @@ public class DecathlonSearchTest extends BaseTest {
                 "Page title should retain the searched product terms");
     }
 
-    @Test(description = "DISC-IN-02: selected Adidas brand is reflected by the listing")
+    @Test(groups = "filters", description = "DEC-FILTER-01: selected Adidas brand is reflected by the listing")
     public void adidasBrandFilterChangesAndConstrainsListing() {
         DecathlonHomePage home = new DecathlonHomePage(driver).open();
         DecathlonSearchPage page = home.searchFor(QUERY);
@@ -52,7 +57,7 @@ public class DecathlonSearchTest extends BaseTest {
                 "Filtered listing should differ from its original first product");
     }
 
-    @Test(description = "PDP-IN-01: selected search result identity and displayed price persist")
+    @Test(groups = "product", description = "DEC-PDP-01: selected search result identity and displayed price persist")
     public void productDetailsMatchSelectedSearchResult() {
         DecathlonHomePage home = new DecathlonHomePage(driver).open();
         DecathlonSearchPage page = home.searchFor(QUERY);
@@ -74,6 +79,37 @@ public class DecathlonSearchTest extends BaseTest {
         Assert.assertTrue(details.productDetailsText().replaceAll("\\s", "")
                         .contains(resultPrice),
                 "The selected listing price should be present in product details");
+    }
+
+    @Test(groups = "navigation", description = "DEC-NAV-01: product navigation supports browser back, refresh, and forward")
+    public void productNavigationSurvivesBackRefreshAndForward() {
+        DecathlonSearchPage listing = new DecathlonHomePage(driver).open().searchFor(QUERY);
+        var product = listing.productResults().get(0);
+        String listingUrl = driver.getCurrentUrl();
+
+        listing.openProduct(product.href());
+        Assert.assertTrue(driver.getCurrentUrl().contains("/p/"),
+                "Selecting a result should open its product details");
+
+        driver.navigate().back();
+        var wait = new WebDriverWait(driver,
+                Duration.ofSeconds(ConfigReader.getIntProperty("wait.timeout.seconds")));
+        wait.until(d -> d.getCurrentUrl().contains("/search"));
+        wait.until(d -> !listing.productResults().isEmpty());
+        Assert.assertFalse(listing.productResults().isEmpty(),
+                "Browser back should restore a usable product listing");
+        driver.navigate().refresh();
+        wait.until(d -> !listing.productResults().isEmpty());
+        Assert.assertTrue(driver.getCurrentUrl().contains("/search"),
+                "Refreshing should retain the search results route");
+        Assert.assertEquals(URLDecoder.decode(driver.getCurrentUrl(), StandardCharsets.UTF_8),
+                URLDecoder.decode(listingUrl, StandardCharsets.UTF_8),
+                "Refresh should preserve the current search URL");
+
+        driver.navigate().forward();
+        wait.until(d -> d.getCurrentUrl().contains("/p/"));
+        Assert.assertTrue(driver.getCurrentUrl().startsWith(product.href()),
+                "Browser forward should restore the same product identity");
     }
 
     private static String normalize(String text) {

@@ -57,3 +57,37 @@ have no failure screenshots.
 
 Generated evidence is under ignored `reports/` and `target/` directories and
 is not committed.
+
+## 2026-10-31 milestone update
+
+Added `DEC-NAV-01`, which uses a fresh browser to open a result, navigate back
+to a usable listing, refresh while retaining the decoded search URL, and
+navigate forward to the same product. The first run exposed that the listing
+needed a post-back content wait and that Decathlon serializes equivalent query
+spaces as `%20` or `+`; both conditions are handled explicitly. No retry was
+added.
+
+| Validation | Methods / invocations | Results |
+| --- | ---: | --- |
+| Clean Maven build and headless Chrome suite | 4 / 4 | 4 passed, 0 failed, 0 skipped; 15.1 s total |
+| Headed Chrome suite | 4 / 4 | 4 passed, 0 failed, 0 skipped; 16.9 s total |
+| Isolated fresh headless navigation session | 1 / 1 | 1 passed |
+
+The headed and headless full suites each observed four unique scenarios:
+`DEC-DISC-01`, `DEC-FILTER-01`, `DEC-PDP-01`, and `DEC-NAV-01`. The headed
+analytics record reports 15,295 ms of test-process execution, zero
+configuration failures, and seven unverified candidate scenarios. Reporting
+emitted a unique Extent report and analytics JSON. No screenshot was expected
+because these runs passed.
+
+Headed and headless local Chrome are verified. GitHub Actions is configured
+for the complete headless suite but has not been run on hosted CI. The initial
+unprivileged Maven attempt could not bind Selenium's local ChromeDriver port;
+reruns with local port access succeeded. Selenium also emitted a non-fatal
+Chrome 156 / CDP 155 nearest-binding warning.
+
+The seven unverified inventory entries remain price range/reset, category and
+additional filters, sorting, no-results behavior, variants/delivery state,
+guest cart addition, and cart quantity/subtotal/removal. Checkout is not in the
+verified inventory because it was not safely reachable or exercised. No
+account, personal data, order, or payment was used.

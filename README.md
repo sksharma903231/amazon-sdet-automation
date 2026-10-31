@@ -58,9 +58,11 @@ The source of truth is [`in-scope-scenarios.txt`](src/test/resources/in-scope-sc
 | DEC-DISC-01 | Search for running shoes | Search route and query evidence; visible product names, prices, and product-detail links |
 | DEC-FILTER-01 | Apply the Adidas brand filter | Select the observed brand option; verify the listing changes and every visible result identifies Adidas |
 | DEC-PDP-01 | Open a search result | Verify product route, title identity, and selected listing price on the detail page |
+| DEC-NAV-01 | Listing and product navigation | Verify browser back, refresh, and forward preserve listing/product identity |
 
-These are three unique scenarios. Separate browser sessions and repeated
-filter runs are execution evidence, not additional scenario coverage.
+These are four unique scenarios. Separate browser sessions and repeated
+filter runs are execution evidence, not additional scenario coverage. TestNG
+groups are `search`, `filters`, `product`, and `navigation`.
 
 ## Prerequisites and setup
 
@@ -78,11 +80,14 @@ The Maven project name is `ecommerce-ui-automation`.
 ## Run tests
 
 ```bash
-# Headed Chrome
-mvn --batch-mode -Dtest=DecathlonSearchTest -Dbrowser=chrome -Dheadless=false test
+# Full suite, headed Chrome
+mvn --batch-mode -Dbrowser=chrome -Dheadless=false test
 
-# Headless Chrome
-mvn --batch-mode -Dtest=DecathlonSearchTest -Dbrowser=chrome -Dheadless=true test
+# Full suite, headless Chrome
+mvn --batch-mode -Dbrowser=chrome -Dheadless=true test
+
+# Run one TestNG group, e.g. search or navigation
+mvn --batch-mode -Dgroups=search -Dbrowser=chrome -Dheadless=true test
 ```
 
 Default settings are in `config.properties`: `browser=chrome`,
@@ -123,7 +128,7 @@ new business scenarios. No coverage or reliability percentage is reported.
 ## CI
 
 `.github/workflows/selenium-tests.yml` configures Temurin Java 21 and Chrome,
-runs only `DecathlonSearchTest` headlessly, and uploads Surefire output,
+runs the complete suite headlessly with a 15-minute timeout, and uploads Surefire output,
 ExtentReports, screenshots, analytics, and logs even when the test step fails.
 The workflow has not yet been verified by a hosted GitHub Actions run.
 
@@ -131,6 +136,8 @@ The workflow has not yet been verified by a hosted GitHub Actions run.
 
 - The Adidas filter and listing-to-detail path passed repeated local sessions;
   the storefront uses dynamic rendering, so selectors can still change.
+- Search browser back, refresh, and forward behavior passed in a fresh headless
+  session. The site may re-encode equivalent query URLs (`%20` and `+`).
 - Price range controls were observed, but applying a range, verifying numeric
   enforcement, and clearing it are unverified.
 - No stable sorting control was found in the inspected listing; sort order is
@@ -145,4 +152,6 @@ The workflow has not yet been verified by a hosted GitHub Actions run.
   and markup can change by time and location.
 
 No authentication, personal information, checkout, payment, or access-control
-bypass is part of this suite.
+bypass is part of this suite. Decathlon India is a third-party live application
+used for UI automation practice; this project is not affiliated with or
+endorsed by Decathlon.
