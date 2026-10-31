@@ -27,7 +27,7 @@ public class DriverFactory {
         WebDriver driver;
         if (browser.equalsIgnoreCase("chrome")) {
             ChromeOptions options = new ChromeOptions();
-            if (Boolean.parseBoolean(ConfigReader.getProperty("headless"))) {
+            if (ConfigReader.getBooleanProperty("headless")) {
                 options.addArguments("--headless=new", "--no-sandbox",
                         "--disable-dev-shm-usage");
             }

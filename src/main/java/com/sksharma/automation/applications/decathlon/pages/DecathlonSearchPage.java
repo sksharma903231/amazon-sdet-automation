@@ -1,6 +1,7 @@
 package com.sksharma.automation.applications.decathlon.pages;
 
 import com.sksharma.automation.applications.decathlon.elements.DecathlonSearchElements;
+import com.sksharma.automation.config.ConfigReader;
 import com.sksharma.automation.pages.BasePage;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
@@ -17,14 +18,18 @@ public final class DecathlonSearchPage extends BasePage {
 
     public DecathlonSearchPage(WebDriver driver) {
         super(driver);
-        this.wait = new WebDriverWait(driver, Duration.ofSeconds(20));
+        this.wait = new WebDriverWait(driver,
+                Duration.ofSeconds(ConfigReader.getIntProperty("wait.timeout.seconds")));
     }
 
     public void search(String query) {
         WebElement input = wait.until(ExpectedConditions.elementToBeClickable(
                 DecathlonSearchElements.SEARCH_INPUT));
-        input.clear();
-        input.sendKeys(query, Keys.ENTER);
+        input.click();
+        input.sendKeys(Keys.chord(Keys.CONTROL, "a"), Keys.BACK_SPACE);
+        input.sendKeys(query);
+        wait.until(d -> query.equals(input.getAttribute("value")));
+        input.sendKeys(Keys.ENTER);
         wait.until(d -> d.getCurrentUrl().contains("/search") && !productResults().isEmpty());
     }
 
@@ -83,6 +88,7 @@ public final class DecathlonSearchPage extends BasePage {
                 .filter(element -> href.equals(element.getAttribute("href")))
                 .findFirst().orElse(null));
         link.click();
+        wait.until(d -> d.getCurrentUrl().contains("/p/"));
     }
 
     public record ProductResult(String href, String text, String imageAlt) { }

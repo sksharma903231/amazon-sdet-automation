@@ -1,5 +1,6 @@
 package com.sksharma.automation.factory;
 
+import com.sksharma.automation.config.ConfigReader;
 import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebDriver;
@@ -14,12 +15,12 @@ import java.util.function.Supplier;
 
 public class MethodFactory {
 
-    private static final Duration WAIT_TIMEOUT = Duration.ofSeconds(15);
-
     private final WebDriver driver;
+    private final Duration waitTimeout;
 
     public MethodFactory(WebDriver driver) {
         this.driver = Objects.requireNonNull(driver, "WebDriver must not be null");
+        this.waitTimeout = Duration.ofSeconds(ConfigReader.getIntProperty("wait.timeout.seconds"));
     }
 
     public WebElement findElement(By locator) {
@@ -129,12 +130,12 @@ public class MethodFactory {
     }
 
     private WebElement waitForClickableElement(By locator) {
-        return new WebDriverWait(driver, WAIT_TIMEOUT)
+        return new WebDriverWait(driver, waitTimeout)
                 .until(ExpectedConditions.elementToBeClickable(locator));
     }
 
     private WebElement waitForVisibleElement(By locator) {
-        return new WebDriverWait(driver, WAIT_TIMEOUT)
+        return new WebDriverWait(driver, waitTimeout)
                 .until(ExpectedConditions.visibilityOfElementLocated(locator));
     }
 

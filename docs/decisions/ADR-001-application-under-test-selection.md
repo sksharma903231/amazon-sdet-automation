@@ -1,6 +1,6 @@
 # ADR-001: Select Decathlon India as the primary application under test
 
-- **Status:** Accepted
+- **Status:** Accepted as the historical selection decision; active scope later consolidated on Decathlon
 - **Date:** 2026-10-31
 
 ## Context
@@ -74,3 +74,12 @@ Decathlon feature is automatable.
 
 - [Real-world feasibility assessment](../feasibility/ECOMMERCE_WEBSITE_ASSESSMENT.md)
 - Existing Amazon scenario inventory: `src/test/resources/in-scope-scenarios.txt`
+
+## Subsequent repository direction
+
+The initial migration commit kept Amazon tests alongside Decathlon while
+Decathlon journeys were introduced. In the later cleanup milestone, the
+Amazon-specific source and tests were removed from the active tree after their
+history had been preserved in Git. The active framework is now Decathlon-only;
+this ADR and the feasibility assessment remain as historical decision
+records.

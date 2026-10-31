@@ -9,13 +9,3 @@ UNVERIFIED|DEC-SORT-01|Sorting and displayed numeric ordering
 UNVERIFIED|DEC-PDP-02|Variant selection state and delivery availability
 UNVERIFIED|DEC-CART-01|Guest add-to-cart and cart product identity
 UNVERIFIED|DEC-CART-02|Cart quantity, subtotal, and removal
-UNVERIFIED|AMZ-DISC-02|Amazon no-result behavior
-UNVERIFIED|AMZ-DISC-03|Amazon brand filtering and metadata
-UNVERIFIED|AMZ-DISC-04|Amazon price range enforcement
-UNVERIFIED|AMZ-DISC-05|Amazon numeric price sorting
-UNVERIFIED|AMZ-PDP-01|Amazon product detail identity and price
-UNVERIFIED|AMZ-PDP-02|Amazon product availability
-UNVERIFIED|AMZ-CART-01|Amazon guest cart addition
-UNVERIFIED|AMZ-CART-02|Amazon cart quantity update
-UNVERIFIED|AMZ-CART-03|Amazon cart item removal
-UNVERIFIED|AMZ-CART-04|Amazon cart subtotal calculation

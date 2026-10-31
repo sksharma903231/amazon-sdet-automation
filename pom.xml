@@ -5,12 +5,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.sksharma.automation</groupId>
-    <artifactId>amazon-sdet-automation</artifactId>
+    <artifactId>ecommerce-ui-automation</artifactId>
     <version>1.0-SNAPSHOT</version>
+    <name>E-commerce UI Automation</name>
+    <description>Decathlon India e-commerce UI automation framework</description>
 
     <properties>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
+        <maven.compiler.release>21</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 

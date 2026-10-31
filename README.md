@@ -1,96 +1,148 @@
-# Decathlon India E-commerce Automation
+# E-commerce UI Automation — Decathlon India
 
-Java 21, Selenium, and TestNG UI automation for verified Decathlon India
-product-discovery journeys. The repository preserves its Amazon India tests as
-a separate application scope and retains the shared framework infrastructure.
+Maintainable Java/Selenium UI automation for verified product-discovery
+workflows on [Decathlon India](https://www.decathlon.in/). This is a focused
+SDET portfolio project: scenario coverage is driven by observed storefront
+behavior, and unsupported flows remain explicit in the scenario inventory.
 
-## Stack and structure
+## Technology
 
-- Java 21, Maven, Selenium 4.51.0, TestNG 7.11.0
-- Page Objects, ThreadLocal WebDriver lifecycle, explicit waits, configurable
-  Chrome/headless execution
-- ExtentReports, Log4j2, failure screenshots, and per-run JSON analytics
-- GitHub Actions uses Chrome headlessly and retains Surefire, reports, and logs
+| Component | Version / choice |
+| --- | --- |
+| Java | 21 |
+| Build | Maven 3.9+ |
+| Browser automation | Selenium Java 4.51.0 |
+| Test framework | TestNG 7.11.0 |
+| Reporting | ExtentReports 5.1.2 |
+| Logging | Log4j2 2.26.1 |
+| Browser | Google Chrome, headed or headless |
+
+## Architecture
 
 ```text
 src/main/java/com/sksharma/automation/
-  config/ driver/ factory/ pages/ utils/
-  applications/decathlon/{elements,pages}/
-  elements/ pages/                         # preserved Amazon pages
+  applications/decathlon/elements/  Decathlon-specific locators
+  applications/decathlon/pages/     Home, search, and product page objects
+  config/                           Properties and JVM overrides
+  driver/                           ThreadLocal Chrome lifecycle
+  factory/                          Shared Selenium interactions and waits
+  pages/                            Shared BasePage
+  utils/                            Logging and common wait utilities
 src/test/java/com/sksharma/automation/
-  tests/decathlon/                         # primary functional suite
-  tests/                                   # preserved Amazon suite
-  dataproviders/ feasibility/ listeners/ reporting/ reports/
-docs/decisions/ docs/feasibility/
+  tests/decathlon/                  Business-level Decathlon scenarios
+  listeners/                        TestNG reporting and diagnostics listener
+  reporting/                        Thread-local logger and run analytics
+  reports/                          ExtentReports lifecycle
+docs/                               Decisions, feasibility, execution evidence
 ```
 
-## Verified Decathlon scenarios
+Page objects own browser interactions; tests assert business outcomes. Locator
+definitions are isolated from page behavior. `DriverFactory` creates one
+WebDriver per test thread and `BaseTest` always tears it down. Explicit waits
+use the `wait.timeout.seconds` property. `ConfigReader` reads
+`src/main/resources/config.properties` and allows JVM system-property
+overrides.
 
-`src/test/resources/in-scope-scenarios.txt` is the explicit scenario inventory.
-Currently implemented scenarios are:
-
-| ID | Customer workflow | Evidence asserted |
-| --- | --- | --- |
-| DEC-DISC-01 | Search for running shoes | Search route and query evidence; visible named results, prices, and product links |
-| DEC-FILTER-01 | Filter search results by Adidas | Select the observed brand choice; verify listing changes and all visible product names identify Adidas |
-| DEC-PDP-01 | Open a search result | Detail route, title identity, and displayed price agree with the selected listing |
-
-These are three unique business scenarios. The search query is currently one
-controlled data point; repeated rows or browser modes are not additional
-business scenarios. Price range, category filters, sorting, no-results,
-variants, delivery availability, and cart are listed as unverified candidates
-until their resulting behavior is demonstrated.
-
-The selection rationale and dated live-browser observations are in
-[`ADR-001`](docs/decisions/ADR-001-application-under-test-selection.md) and the
+The application-selection rationale and browser evidence are documented in
+[ADR-001](docs/decisions/ADR-001-application-under-test-selection.md) and the
 [feasibility assessment](docs/feasibility/ECOMMERCE_WEBSITE_ASSESSMENT.md).
-Local test outcomes and unsupported behavior are recorded in the
+The recorded local run outcomes are in the
 [execution record](docs/testing/DECATHLON-EXECUTION-RECORD.md).
 
-## Run locally
+## Implemented business scenarios
 
-Prerequisites: Java 21, Maven 3.9+, Google Chrome, and network access to
-Decathlon India. Selenium Manager resolves ChromeDriver.
+The source of truth is [`in-scope-scenarios.txt`](src/test/resources/in-scope-scenarios.txt).
+
+| ID | Workflow | Business evidence |
+| --- | --- | --- |
+| DEC-DISC-01 | Search for running shoes | Search route and query evidence; visible product names, prices, and product-detail links |
+| DEC-FILTER-01 | Apply the Adidas brand filter | Select the observed brand option; verify the listing changes and every visible result identifies Adidas |
+| DEC-PDP-01 | Open a search result | Verify product route, title identity, and selected listing price on the detail page |
+
+These are three unique scenarios. Separate browser sessions and repeated
+filter runs are execution evidence, not additional scenario coverage.
+
+## Prerequisites and setup
+
+Install Java 21, Maven 3.9+, Google Chrome, and ensure Decathlon India is
+reachable. Selenium Manager resolves a compatible ChromeDriver.
+
+From the repository root, compile the project with:
 
 ```bash
+mvn --batch-mode -DskipTests test-compile
+```
+
+The Maven project name is `ecommerce-ui-automation`.
+
+## Run tests
+
+```bash
+# Headed Chrome
 mvn --batch-mode -Dtest=DecathlonSearchTest -Dbrowser=chrome -Dheadless=false test
+
+# Headless Chrome
 mvn --batch-mode -Dtest=DecathlonSearchTest -Dbrowser=chrome -Dheadless=true test
 ```
 
-Run Amazon independently with its application URL explicitly selected:
+Default settings are in `config.properties`: `browser=chrome`,
+`headless=false`, `base.url=https://www.decathlon.in/`, and
+`wait.timeout.seconds=20`. Override them for an execution with JVM properties,
+for example:
 
 ```bash
-mvn --batch-mode -Dtest=AmazonSearchTest,AmazonHomePageTest,BrowserLaunchTest \
-  -Dbase.url=https://www.amazon.in/ -Dbrowser=chrome -Dheadless=false test
+mvn --batch-mode -Dtest=DecathlonSearchTest -Dbrowser=chrome \
+  -Dheadless=true -Dbase.url=https://www.decathlon.in/ \
+  -Dwait.timeout.seconds=30 test
 ```
 
-`base.url` and `headless` can be overridden with JVM system properties. A test
-method owns a fresh browser session; each DataProvider row also receives its
-own setup and teardown.
+The browser factory currently supports Chrome. Headed Chrome requires a
+graphical session; CI uses headless mode.
 
-## Reports and analytics
+## Reporting, logs, and failures
 
-- Extent HTML: `reports/ExtentReport-<timestamp>.html`
-- Failure screenshots: `reports/screenshots/`, with relative report references
-- Execution JSON: `reports/analytics/execution-<timestamp>-<id>.json`
-- Surefire XML/text: `target/surefire-reports/`
+- Extent HTML reports: `reports/ExtentReport-<timestamp>.html`
+- Failure screenshots: `reports/screenshots/`, linked with paths relative to
+  each report
+- JSON execution summaries: `reports/analytics/`
+- Surefire XML and text: `target/surefire-reports/`
 - Log4j output: `logs/`
 
-JSON distinguishes observed TestNG methods, invocations, unique scenario IDs,
-scenario outcomes, invocation outcomes, configuration failures, screenshot
-capture outcomes, and unverified candidates. A DataProvider invocation does
-not create a new scenario. Reports are diagnostic outputs and do not alter
-test outcomes.
+The TestNG listener is registered through
+`src/test/resources/META-INF/services/org.testng.ITestNGListener`. It records
+test outcomes in ExtentReports, captures screenshots for failures, and writes
+analytics on execution completion. Reporting errors are logged and do not
+replace the original test outcome. Reports use unique timestamped filenames
+and are never overwritten.
 
-## CI and limitations
+Analytics distinguish test methods, TestNG invocations, unique scenario IDs,
+scenario and invocation outcomes, configuration failures, failure screenshot
+capture outcomes, and unverified Decathlon candidates. Data rows do not become
+new business scenarios. No coverage or reliability percentage is reported.
 
-GitHub Actions configures Temurin Java 21, Chrome, and headless execution. It
-uploads Surefire results and generated reports even after test failures. A
-workflow file is not evidence of a successful hosted run; CI status should be
-reported only after an actual Actions execution.
+## CI
 
-The target is a live, changing storefront. Prices, inventory, delivery,
-product ordering, filters, and page markup can vary. The suite avoids login,
-personal information, checkout, and payment. It does not bypass access
-controls. Amazon functionality remains in its existing packages and can be
-run separately as shown above.
+`.github/workflows/selenium-tests.yml` configures Temurin Java 21 and Chrome,
+runs only `DecathlonSearchTest` headlessly, and uploads Surefire output,
+ExtentReports, screenshots, analytics, and logs even when the test step fails.
+The workflow has not yet been verified by a hosted GitHub Actions run.
+
+## Known limitations
+
+- The Adidas filter and listing-to-detail path passed repeated local sessions;
+  the storefront uses dynamic rendering, so selectors can still change.
+- Price range controls were observed, but applying a range, verifying numeric
+  enforcement, and clearing it are unverified.
+- No stable sorting control was found in the inspected listing; sort order is
+  not asserted.
+- No-results and category-filter behavior are unverified.
+- Product title and price identity are covered. Variant state and delivery
+  availability are not asserted.
+- Guest cart addition could not be established: after a size was selected in
+  the feasibility probe, an enabled add-to-cart control did not appear. Cart,
+  login, checkout, and payment flows are not automated.
+- The target is a live site; product order, price, inventory, availability,
+  and markup can change by time and location.
+
+No authentication, personal information, checkout, payment, or access-control
+bypass is part of this suite.

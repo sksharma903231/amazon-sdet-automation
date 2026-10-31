@@ -37,15 +37,16 @@ public final class ExtentReportManager {
                     new ExtentSparkReporter(reservedReportPath.toString());
 
             sparkReporter.config().setDocumentTitle(
-                    "Amazon SDET Automation"
+                    "E-commerce UI Automation"
             );
             sparkReporter.config().setReportName(
-                    "Automation Test Results"
+                    "Decathlon India Test Results"
             );
 
             ExtentReports reports = new ExtentReports();
             reports.attachReporter(sparkReporter);
-            reports.setSystemInfo("Project", "Amazon SDET Automation");
+            reports.setSystemInfo("Project", "E-commerce UI Automation");
+            reports.setSystemInfo("Application Under Test", "Decathlon India");
             reports.setSystemInfo("Framework", "Selenium + TestNG");
             extentReports = reports;
         } catch (IOException | RuntimeException e) {

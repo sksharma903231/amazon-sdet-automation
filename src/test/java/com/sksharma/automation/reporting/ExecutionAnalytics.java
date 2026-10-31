@@ -9,7 +9,6 @@ import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,13 +18,9 @@ import java.util.concurrent.atomic.LongAdder;
 
 /** Writes a per-run summary based on observed TestNG callbacks. */
 public final class ExecutionAnalytics {
+    private static final String PROJECT_NAME = "ecommerce-ui-automation";
+    private static final String APPLICATION_NAME = "decathlon-india";
     private static final Map<String, String> SCENARIO_IDS = Map.ofEntries(
-            Map.entry("com.sksharma.automation.tests.BrowserLaunchTest.shouldOpenAmazonIndia", "AMZ-NAV-01"),
-            Map.entry("com.sksharma.automation.tests.AmazonHomePageTest.shouldShowSearchInput", "AMZ-SMOKE-01"),
-            Map.entry("com.sksharma.automation.tests.AmazonHomePageTest.shouldEnableSearchInput", "AMZ-SMOKE-02"),
-            Map.entry("com.sksharma.automation.tests.AmazonSearchTest.shouldDisplaySearchResultsForSearchTerm", "AMZ-DISC-01"),
-            Map.entry("com.sksharma.automation.tests.AmazonSearchTest.shouldRetainSearchStateAfterRefresh", "AMZ-NAV-02"),
-            Map.entry("com.sksharma.automation.tests.AmazonSearchTest.shouldReturnToHomepageWithBrowserBack", "AMZ-NAV-03"),
             Map.entry("com.sksharma.automation.tests.decathlon.DecathlonSearchTest.searchShowsProductNamesPricesAndLinks", "DEC-DISC-01"),
             Map.entry("com.sksharma.automation.tests.decathlon.DecathlonSearchTest.adidasBrandFilterChangesAndConstrainsListing", "DEC-FILTER-01"),
             Map.entry("com.sksharma.automation.tests.decathlon.DecathlonSearchTest.productDetailsMatchSelectedSearchResult", "DEC-PDP-01")
@@ -58,13 +53,11 @@ public final class ExecutionAnalytics {
                 .sorted(Comparator.comparingLong(ITestResult::getStartMillis)).toList();
         Map<String, Integer> scenarioStatus = new LinkedHashMap<>();
         java.util.Set<String> methods = new java.util.HashSet<>();
-        java.util.Set<String> applications = new java.util.HashSet<>();
         long passedInvocations = 0, failedInvocations = 0, skippedInvocations = 0;
         for (ITestResult result : ordered) {
             String method = methodName(result);
             methods.add(method);
             String scenario = SCENARIO_IDS.get(method);
-            if (scenario != null) applications.add(scenario.startsWith("DEC-") ? "DEC" : "AMZ");
             if (scenario != null) scenarioStatus.merge(scenario, results.get(result),
                     ExecutionAnalytics::worstStatus);
             switch (results.get(result)) {
@@ -77,13 +70,14 @@ public final class ExecutionAnalytics {
         long passedScenarios = scenarioStatus.values().stream().filter(s -> s == ITestResult.SUCCESS).count();
         long failedScenarios = scenarioStatus.values().stream().filter(s -> s == ITestResult.FAILURE).count();
         long skippedScenarios = scenarioStatus.values().stream().filter(s -> s == ITestResult.SKIP).count();
-        Map<String, Long> unverifiedByApplication = unverifiedCounts(applications);
-        long unverified = unverifiedByApplication.values().stream().mapToLong(Long::longValue).sum();
+        long unverified = unverifiedCount();
         Path directory = Path.of("reports", "analytics");
         Files.createDirectories(directory);
         Path output = directory.resolve("execution-" + startTime.toEpochMilli() + "-" + executionId + ".json");
         String json = "{\n"
                 + "  \"executionId\": \"" + executionId + "\",\n"
+                + "  \"project\": \"" + PROJECT_NAME + "\",\n"
+                + "  \"application\": \"" + APPLICATION_NAME + "\",\n"
                 + "  \"startTime\": \"" + startTime + "\",\n"
                 + "  \"endTime\": \"" + endTime + "\",\n"
                 + "  \"totalTestMethods\": " + methods.size() + ",\n"
@@ -97,7 +91,6 @@ public final class ExecutionAnalytics {
                 + "  \"skippedInvocations\": " + skippedInvocations + ",\n"
                 + "  \"configurationFailures\": " + configurationFailures.sum() + ",\n"
                 + "  \"unverifiedCandidateScenarios\": " + unverified + ",\n"
-                + "  \"unverifiedCandidatesByApplication\": " + mapJson(unverifiedByApplication) + ",\n"
                 + "  \"screenshotCaptureSuccesses\": " + screenshotSuccesses.sum() + ",\n"
                 + "  \"screenshotCaptureFailures\": " + screenshotFailures.sum() + ",\n"
                 + "  \"scenarioResults\": " + scenarioJson(scenarioStatus) + ",\n"
@@ -118,29 +111,12 @@ public final class ExecutionAnalytics {
         return "[" + String.join(",", items) + "]";
     }
 
-    private static Map<String, Long> unverifiedCounts(java.util.Set<String> applications)
-            throws IOException {
-        Map<String, Long> counts = new LinkedHashMap<>();
+    private static long unverifiedCount() throws IOException {
         Path inventory = Path.of("src/test/resources/in-scope-scenarios.txt");
-        if (!Files.exists(inventory)) return counts;
-        List<String> definitions;
+        if (!Files.exists(inventory)) return 0;
         try (var lines = Files.lines(inventory)) {
-            definitions = lines.toList();
+            return lines.filter(line -> line.startsWith("UNVERIFIED|DEC-")).count();
         }
-        for (String application : applications) {
-            String prefix = application + "-";
-            long count = definitions.stream().filter(line -> line.startsWith("UNVERIFIED|"))
-                    .filter(line -> line.split("\\|", 3).length > 1)
-                    .filter(line -> line.split("\\|", 3)[1].startsWith(prefix)).count();
-            counts.put(application.equals("DEC") ? "DECATHLON" : "AMAZON", count);
-        }
-        return counts;
-    }
-
-    private String mapJson(Map<String, Long> values) {
-        List<String> items = new ArrayList<>();
-        values.forEach((application, count) -> items.add("\"" + application + "\":" + count));
-        return "{" + String.join(",", items) + "}";
     }
 
     private String invocationJson(List<ITestResult> values) {

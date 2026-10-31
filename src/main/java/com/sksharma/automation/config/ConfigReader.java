@@ -59,4 +59,24 @@ public class ConfigReader {
         return value.trim();
     }
 
+    public static int getIntProperty(String key) {
+        String value = getProperty(key);
+        try {
+            int parsed = Integer.parseInt(value);
+            if (parsed < 1) throw new NumberFormatException("must be positive");
+            return parsed;
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException(
+                    "Configuration property '" + key + "' must be a positive integer: " + value, e);
+        }
+    }
+
+    public static boolean getBooleanProperty(String key) {
+        String value = getProperty(key);
+        if ("true".equalsIgnoreCase(value)) return true;
+        if ("false".equalsIgnoreCase(value)) return false;
+        throw new IllegalArgumentException(
+                "Configuration property '" + key + "' must be true or false: " + value);
+    }
+
 }

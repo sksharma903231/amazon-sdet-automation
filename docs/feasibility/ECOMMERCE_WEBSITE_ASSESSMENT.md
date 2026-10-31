@@ -146,3 +146,11 @@ mvn --batch-mode -Dtest=EcommerceWebsiteFeasibilityTest \
 mvn --batch-mode -Dtest=EcommerceWebsiteFeasibilityTest \
   -Dassessment.mode=headless -Dbrowser=chrome -Dheadless=true test
 ```
+
+## Later project state
+
+This assessment records the original application-selection investigation.
+After Decathlon scenarios were implemented and validated, the active project
+was consolidated to Decathlon-only source and tests. The Amazon/Flipkart/Croma
+observations above remain historical evidence and are not current executable
+test scopes.

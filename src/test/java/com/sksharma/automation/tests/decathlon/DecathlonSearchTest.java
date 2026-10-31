@@ -1,6 +1,7 @@
 package com.sksharma.automation.tests.decathlon;
 
 import com.sksharma.automation.applications.decathlon.pages.DecathlonProductPage;
+import com.sksharma.automation.applications.decathlon.pages.DecathlonHomePage;
 import com.sksharma.automation.applications.decathlon.pages.DecathlonSearchPage;
 import com.sksharma.automation.tests.BaseTest;
 import org.testng.Assert;
@@ -15,9 +16,8 @@ public class DecathlonSearchTest extends BaseTest {
 
     @Test(description = "DISC-IN-01: search returns identifiable priced product links")
     public void searchShowsProductNamesPricesAndLinks() {
-        driver.get("https://www.decathlon.in/");
-        DecathlonSearchPage page = new DecathlonSearchPage(driver);
-        page.search(QUERY);
+        DecathlonHomePage home = new DecathlonHomePage(driver).open();
+        DecathlonSearchPage page = home.searchFor(QUERY);
         Assert.assertTrue(driver.getCurrentUrl().contains("/search"),
                 "Search should navigate to the product results route");
         var products = page.productResults();
@@ -35,9 +35,8 @@ public class DecathlonSearchTest extends BaseTest {
 
     @Test(description = "DISC-IN-02: selected Adidas brand is reflected by the listing")
     public void adidasBrandFilterChangesAndConstrainsListing() {
-        driver.get("https://www.decathlon.in/");
-        DecathlonSearchPage page = new DecathlonSearchPage(driver);
-        page.search(QUERY);
+        DecathlonHomePage home = new DecathlonHomePage(driver).open();
+        DecathlonSearchPage page = home.searchFor(QUERY);
         String before = page.productResults().get(0).href();
         page.openBrandFilter();
         String selected = page.selectBrand("Adidas");
@@ -55,9 +54,8 @@ public class DecathlonSearchTest extends BaseTest {
 
     @Test(description = "PDP-IN-01: selected search result identity and displayed price persist")
     public void productDetailsMatchSelectedSearchResult() {
-        driver.get("https://www.decathlon.in/");
-        DecathlonSearchPage page = new DecathlonSearchPage(driver);
-        page.search(QUERY);
+        DecathlonHomePage home = new DecathlonHomePage(driver).open();
+        DecathlonSearchPage page = home.searchFor(QUERY);
         var selected = page.productResults().get(0);
         String resultTitle = selected.text().split("\\R")[0].trim();
         String resultPrice = PRICE.matcher(selected.text()).results()
@@ -65,8 +63,7 @@ public class DecathlonSearchTest extends BaseTest {
                 .findFirst().orElseThrow(() -> new AssertionError("Result price not displayed"));
         String productUrl = selected.href();
         page.openProduct(productUrl);
-        Assert.assertTrue(new org.openqa.selenium.support.ui.WebDriverWait(driver,
-                java.time.Duration.ofSeconds(15)).until(d -> d.getCurrentUrl().contains("/p/")),
+        Assert.assertTrue(driver.getCurrentUrl().contains("/p/"),
                 "Selecting a product should navigate to its details");
         DecathlonProductPage details = new DecathlonProductPage(driver);
         String detailTitle = details.title();

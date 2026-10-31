@@ -1,4 +1,4 @@
-name: Selenium UI tests
+name: Decathlon India UI automation
 
 on:
   push:
@@ -26,7 +26,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: selenium-test-evidence-${{ github.run_id }}
+          name: ecommerce-ui-automation-evidence-${{ github.run_id }}
           if-no-files-found: warn
           path: |
             target/surefire-reports/
