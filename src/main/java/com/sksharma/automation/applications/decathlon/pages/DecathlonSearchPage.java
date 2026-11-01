@@ -4,6 +4,7 @@ import com.sksharma.automation.applications.decathlon.elements.DecathlonSearchEl
 import com.sksharma.automation.config.ConfigReader;
 import com.sksharma.automation.pages.BasePage;
 import org.openqa.selenium.Keys;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
@@ -24,13 +25,29 @@ public final class DecathlonSearchPage extends BasePage {
     }
 
     public void search(String query) {
-        WebElement input = wait.until(ExpectedConditions.elementToBeClickable(
-                DecathlonSearchElements.SEARCH_INPUT));
+        WebElement input = wait.until(driver -> {
+            WebElement candidate = driver.findElement(DecathlonSearchElements.SEARCH_INPUT);
+            if (!candidate.isDisplayed() || !candidate.isEnabled()) return null;
+            boolean unobstructed = Boolean.TRUE.equals(
+                    ((JavascriptExecutor) driver).executeScript("""
+                            const target = arguments[0];
+                            const rect = target.getBoundingClientRect();
+                            const top = document.elementFromPoint(
+                              rect.left + rect.width / 2,
+                              rect.top + rect.height / 2);
+                            return top === target || target.contains(top);
+                            """, candidate));
+            return unobstructed ? candidate : null;
+        });
         input.click();
         input.sendKeys(Keys.chord(Keys.CONTROL, "a"), Keys.BACK_SPACE);
         input.sendKeys(query);
-        wait.until(d -> query.equals(input.getAttribute("value")));
-        input.sendKeys(Keys.ENTER);
+        wait.until(d -> {
+            WebElement currentInput = d.findElement(DecathlonSearchElements.SEARCH_INPUT);
+            return query.equals(currentInput.getAttribute("value"));
+        });
+        wait.until(ExpectedConditions.elementToBeClickable(
+                DecathlonSearchElements.SEARCH_INPUT)).sendKeys(Keys.ENTER);
         wait.until(d -> d.getCurrentUrl().contains("/search")
                 && (!productResults().isEmpty()
                 || d.findElement(org.openqa.selenium.By.tagName("body")).getText()
