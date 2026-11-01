@@ -13,8 +13,11 @@ public final class DecathlonSearchElements {
             "input[type='checkbox'],input[type='radio']");
     public static final By SORT_OPTIONS = By.cssSelector("button,[role='option'],[role='menuitem'],[role='menuitemradio']");
     public static final By MEN_CATEGORY_NAV = By.cssSelector("[data-test-id='navigation-category-Men']");
+    public static final By MEN_FOOTWEAR_GROUP =
+            By.cssSelector("[data-test-id='navigation-category-group-Men_Footwear']");
     public static final By MEN_RUNNING_SHOES_LINK =
-            By.cssSelector("a[href*='/c/men-running-shoes']");
+            By.xpath("//*[@data-test-id='navigation-category-group-Men_Footwear']"
+                    + "//a[normalize-space(.)='Running Shoes']");
     public static final By PRODUCT_HEADING = By.cssSelector("h1");
     public static final By PRODUCT_CONTAINER = By.cssSelector("article.pdp-container");
 }
